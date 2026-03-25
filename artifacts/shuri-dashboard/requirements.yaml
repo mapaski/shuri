@@ -1,0 +1,18 @@
+packages:
+  "framer-motion": "For premium micro-interactions, page transitions, and staggered dashboard loading animations"
+  "recharts": "For enterprise-grade data visualization charts (line, bar, area) in the dashboard"
+  "date-fns": "For formatting dates in the activity feed and charts"
+  "clsx": "For conditional class merging in stylized components"
+  "tailwind-merge": "For resolving Tailwind class conflicts safely"
+
+images:
+  - path: "artifacts/shuri-dashboard/public/images/logo.png"
+    description: "A modern, sleek, geometric high-tech logo mark for 'SHURI', abstract shape glowing with cyan and deep purple, transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/shuri-dashboard/public/images/avatar.png"
+    description: "A professional 3D illustrated avatar of a stylized human face, moody studio lighting, cyberpunk tech wear, clean background"
+    aspect_ratio: "1:1"
+
+notes:
+  - "Since the backend currently only exposes /api/healthz, the dashboard relies on a mock data hook (use-dashboard.ts) to simulate real API latency and deliver realistic analytics data."
+  - "The UI is locked into a premium dark mode as requested by the design specification."
