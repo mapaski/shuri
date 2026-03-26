@@ -47,3 +47,5 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+backend/data/honeypot_alerts.json
+backend/data/scan_output.json
