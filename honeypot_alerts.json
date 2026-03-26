@@ -1,0 +1,22 @@
+[
+  {
+    "timestamp": "2026-03-26T16:15:46.263036",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  },
+  {
+    "timestamp": "2026-03-26T16:15:46.380336",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/favicon.ico",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  }
+]
