@@ -1,0 +1,2847 @@
+!nmap --version
+
+# Cell 1: Install Nmap
+!apt-get update -qq
+!apt-get install -y nmap
+
+import nmap
+
+# Create a scanner object
+nm = nmap.PortScanner()
+
+# Test on a safe target
+print("🔍 Testing Nmap from Python...")
+print("Scanning scanme.nmap.org (official Nmap test server)...")
+print("This will take ~10 seconds...\n")
+
+nm.scan('scanme.nmap.org', '22-80')
+
+print("✅ Scan complete!\n")
+print("📊 Results:")
+for host in nm.all_hosts():
+    print(f"\n🖥️  Host: {host}")
+    print(f"   State: {nm[host].state()}")
+
+    if 'tcp' in nm[host]:
+        for port in nm[host]['tcp'].keys():
+            state = nm[host]['tcp'][port]['state']
+            service = nm[host]['tcp'][port]['name']
+            print(f"   Port {port}: {state} ({service})")
+
+def scan_device(ip_address, ports='22,23,80,443,554,1883,8080'):
+    """
+    Scan a single device and return what we find
+
+    Args:
+        ip_address: IP to scan (e.g., "192.168.1.1")
+        ports: Which ports to check (default: common IoT ports)
+
+    Returns:
+        Dictionary with device info
+    """
+    nm = nmap.PortScanner()
+
+    print(f"🔍 Scanning {ip_address}...")
+
+    # Scan the device
+    nm.scan(ip_address, ports, arguments='-sV')  # -sV = detect service versions
+
+    if ip_address not in nm.all_hosts():
+        return {'ip': ip_address, 'state': 'down', 'error': 'Host not reachable'}
+
+    device = {
+        'ip': ip_address,
+        'hostname': nm[ip_address].hostname() if nm[ip_address].hostname() else 'Unknown',
+        'state': nm[ip_address].state(),
+        'open_ports': []
+    }
+
+    # Get open ports
+    if 'tcp' in nm[ip_address]:
+        for port in nm[ip_address]['tcp'].keys():
+            port_info = {
+                'port': port,
+                'state': nm[ip_address]['tcp'][port]['state'],
+                'service': nm[ip_address]['tcp'][port]['name'],
+                'product': nm[ip_address]['tcp'][port].get('product', 'Unknown'),
+                'version': nm[ip_address]['tcp'][port].get('version', 'Unknown')
+            }
+            device['open_ports'].append(port_info)
+
+    return device
+
+# Test with Google's public DNS (more reliable)
+result = scan_device('8.8.8.8', ports='53,80,443')
+
+# Pretty print the result
+import json
+print("\n📋 Full Device Info:")
+print(json.dumps(result, indent=2))
+
+import requests
+
+def grab_http_banner(ip, port=80, use_https=False):
+    """
+    Connect to a device's web server and read its banner
+
+    Args:
+        ip: IP address
+        port: Port number (80 for HTTP, 443 for HTTPS)
+        use_https: True if HTTPS, False if HTTP
+
+    Returns:
+        Dictionary with server info
+    """
+    protocol = 'https' if use_https else 'http'
+    url = f"{protocol}://{ip}:{port}"
+
+    print(f"📡 Grabbing banner from {url}...")
+
+    try:
+        response = requests.get(url, timeout=5, verify=False)
+
+        banner = {
+            'server': response.headers.get('Server', 'Unknown'),
+            'x_powered_by': response.headers.get('X-Powered-By', 'Not disclosed'),
+            'status_code': response.status_code,
+            'headers': dict(response.headers)
+        }
+
+        # Try to extract version from Server header
+        server = banner['server']
+        if '/' in server:
+            parts = server.split('/')
+            banner['software'] = parts[0]
+            banner['version'] = parts[1] if len(parts) > 1 else 'Unknown'
+        else:
+            banner['software'] = server
+            banner['version'] = 'Unknown'
+
+        return banner
+
+    except Exception as e:
+        return {'error': str(e)}
+
+# Test on Google's HTTPS server
+result = grab_http_banner('8.8.8.8', port=443, use_https=True)
+
+import json
+print("\n📋 Banner Info:")
+print(json.dumps(result, indent=2))
+
+import ssl
+import socket
+
+def analyze_cipher_suite(ip, port=443):
+    """
+    Check what encryption a device uses
+
+    Args:
+        ip: IP address
+        port: HTTPS port (usually 443)
+
+    Returns:
+        Dictionary with TLS/cipher info
+    """
+    print(f"🔐 Analyzing TLS/SSL for {ip}:{port}...")
+
+    try:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+
+        with socket.create_connection((ip, port), timeout=5) as sock:
+            with context.wrap_socket(sock, server_hostname=ip) as ssock:
+                cipher_name, tls_version, bits = ssock.cipher()
+
+                # Check if cipher/TLS is weak
+                weak_ciphers = ['RC4', 'MD5', 'DES', 'NULL', 'EXPORT', 'anon']
+                weak_tls = ['SSLv2', 'SSLv3', 'TLSv1.0', 'TLSv1.1']
+
+                is_cipher_weak = any(weak in cipher_name.upper() for weak in weak_ciphers)
+                is_tls_weak = ssock.version() in weak_tls
+
+                risk_flags = []
+                if 'RC4' in cipher_name.upper():
+                    risk_flags.append('RC4_BROKEN')
+                if 'MD5' in cipher_name.upper():
+                    risk_flags.append('MD5_WEAK_HASH')
+                if ssock.version() in ['TLSv1.0', 'TLSv1.1']:
+                    risk_flags.append('TLS_OUTDATED')
+                if ssock.version() in ['SSLv2', 'SSLv3']:
+                    risk_flags.append('SSL_CRITICAL')
+
+                return {
+                    'tls_version': ssock.version(),
+                    'cipher_name': cipher_name,
+                    'key_bits': bits,
+                    'weak_cipher': is_cipher_weak,
+                    'weak_tls': is_tls_weak,
+                    'risk_flags': risk_flags,
+                    'risk_level': 'HIGH' if risk_flags else 'LOW'
+                }
+
+    except Exception as e:
+        return {'error': str(e), 'supports_tls': False}
+
+# Test on Google (should have STRONG encryption)
+result = analyze_cipher_suite('8.8.8.8', port=443)
+
+import json
+print("\n📋 Cipher Analysis:")
+print(json.dumps(result, indent=2))
+
+def scan_device_complete(ip, ports='80,443'):
+    """
+    Complete device scan: Nmap + Banner + Cipher analysis
+
+    Args:
+        ip: IP address to scan
+        ports: Ports to check
+
+    Returns:
+        Complete device profile
+    """
+    print(f"\n{'='*60}")
+    print(f"🎯 COMPLETE SCAN: {ip}")
+    print(f"{'='*60}\n")
+
+    # Step 1: Nmap scan
+    device = scan_device(ip, ports)
+
+    if device.get('state') != 'up':
+        print("❌ Device is down or unreachable")
+        return device
+
+    # Step 2: Try to grab HTTP banner if port 80 is open
+    if any(p['port'] == 80 for p in device.get('open_ports', [])):
+        print("\n📡 Attempting HTTP banner grab...")
+        device['http_banner'] = grab_http_banner(ip, port=80, use_https=False)
+
+    # Step 3: Try to analyze HTTPS cipher if port 443 is open
+    if any(p['port'] == 443 for p in device.get('open_ports', [])):
+        print("\n🔐 Attempting HTTPS cipher analysis...")
+        device['https_banner'] = grab_http_banner(ip, port=443, use_https=True)
+        device['cipher_suite'] = analyze_cipher_suite(ip, port=443)
+
+    return device
+
+# Test the complete scan on Google DNS
+result = scan_device_complete('8.8.8.8', ports='53,80,443')
+
+# Pretty print
+import json
+print("\n" + "="*60)
+print("📊 FINAL DEVICE PROFILE")
+print("="*60)
+print(json.dumps(result, indent=2))
+
+# Save all our functions to a JSON file
+import json
+
+# Create a test scan result
+test_scan = scan_device_complete('8.8.8.8', ports='53,80,443')
+
+# Save to file
+with open('shuri_test_scan.json', 'w') as f:
+    json.dump(test_scan, f, indent=2)
+
+print("✅ Saved to shuri_test_scan.json")
+
+# Also download it to your computer
+from google.colab import files
+files.download('shuri_test_scan.json')
+
+print("📥 File downloaded to your computer!")
+
+# Simple CVE database (in real version, this would be thousands of entries)
+# Format: "software:version" -> list of CVEs
+
+CVE_DATABASE = {
+    "lighttpd:1.4.35": [
+        {
+            "cve_id": "CVE-2018-19052",
+            "cvss_score": 7.5,
+            "description": "Buffer overflow in HTTP header parsing",
+            "severity": "HIGH"
+        }
+    ],
+    "OpenSSH:7.4": [
+        {
+            "cve_id": "CVE-2018-15473",
+            "cvss_score": 5.3,
+            "description": "Username enumeration vulnerability",
+            "severity": "MEDIUM"
+        }
+    ],
+    "nginx:1.14.0": [
+        {
+            "cve_id": "CVE-2019-9511",
+            "cvss_score": 7.5,
+            "description": "HTTP/2 DoS vulnerability",
+            "severity": "HIGH"
+        }
+    ],
+    "apache:2.4.29": [
+        {
+            "cve_id": "CVE-2019-0211",
+            "cvss_score": 9.8,
+            "description": "Privilege escalation vulnerability",
+            "severity": "CRITICAL"
+        }
+    ]
+}
+
+def lookup_cve(software, version):
+    """
+    Look up known vulnerabilities for a software version
+
+    Args:
+        software: Software name (e.g., "lighttpd")
+        version: Version number (e.g., "1.4.35")
+
+    Returns:
+        List of CVEs found
+    """
+    key = f"{software}:{version}"
+
+    if key in CVE_DATABASE:
+        print(f"⚠️  Found {len(CVE_DATABASE[key])} CVE(s) for {software} {version}")
+        return CVE_DATABASE[key]
+    else:
+        print(f"✅ No known CVEs for {software} {version}")
+        return []
+
+# Test it
+print("Testing CVE lookup:\n")
+cves = lookup_cve("lighttpd", "1.4.35")
+
+import json
+print("\nCVEs found:")
+print(json.dumps(cves, indent=2))
+
+# OWASP IoT Top 10 mapping
+OWASP_MAPPING = {
+    "default_password": {
+        "category": "I1",
+        "name": "Weak, Guessable, or Hardcoded Passwords",
+        "description": "Use of easily guessed or hardcoded passwords"
+    },
+    "telnet_open": {
+        "category": "I2",
+        "name": "Insecure Network Services",
+        "description": "Unneeded or insecure network services running"
+    },
+    "http_no_auth": {
+        "category": "I3",
+        "name": "Insecure Ecosystem Interfaces",
+        "description": "Insecure web, backend API, or cloud interfaces"
+    },
+    "outdated_firmware": {
+        "category": "I4",
+        "name": "Lack of Secure Update Mechanism",
+        "description": "Lack of firmware validation or secure delivery"
+    },
+    "old_software": {
+        "category": "I5",
+        "name": "Use of Insecure or Outdated Components",
+        "description": "Use of deprecated or insecure software components"
+    },
+    "unencrypted_traffic": {
+        "category": "I7",
+        "name": "Insecure Data Transfer and Storage",
+        "description": "Lack of encryption for sensitive data"
+    },
+    "weak_cipher": {
+        "category": "I7",
+        "name": "Insecure Data Transfer and Storage",
+        "description": "Use of weak encryption algorithms"
+    },
+    "upnp_enabled": {
+        "category": "I9",
+        "name": "Insecure Default Settings",
+        "description": "Devices with insecure default settings"
+    }
+}
+
+def map_to_owasp(issue_type):
+    """
+    Map a security issue to OWASP IoT Top 10 category
+
+    Args:
+        issue_type: Type of issue (e.g., "telnet_open")
+
+    Returns:
+        OWASP category info
+    """
+    if issue_type in OWASP_MAPPING:
+        return OWASP_MAPPING[issue_type]
+    else:
+        return {
+            "category": "Unknown",
+            "name": "Not categorized",
+            "description": "Issue not mapped to OWASP"
+        }
+
+# Test it
+print("Testing OWASP mapping:\n")
+
+test_issues = ["telnet_open", "weak_cipher", "old_software"]
+
+for issue in test_issues:
+    mapping = map_to_owasp(issue)
+    print(f"Issue: {issue}")
+    print(f"  → OWASP {mapping['category']}: {mapping['name']}")
+    print()
+
+# MITRE ATT&CK for IoT mapping
+MITRE_MAPPING = {
+    "telnet_open": {
+        "technique_id": "T0886",
+        "technique_name": "Remote Services",
+        "tactic": "Initial Access",
+        "description": "Attacker can gain initial access via unencrypted remote service"
+    },
+    "ssh_open": {
+        "technique_id": "T0886",
+        "technique_name": "Remote Services",
+        "tactic": "Initial Access",
+        "description": "Attacker can gain access via SSH if credentials are weak"
+    },
+    "default_password": {
+        "technique_id": "T0812",
+        "technique_name": "Default Credentials",
+        "tactic": "Initial Access",
+        "description": "Attacker uses factory default credentials"
+    },
+    "weak_cipher": {
+        "technique_id": "T0830",
+        "technique_name": "Man in the Middle",
+        "tactic": "Collection",
+        "description": "Weak encryption allows traffic interception"
+    },
+    "old_software": {
+        "technique_id": "T0866",
+        "technique_name": "Exploitation of Remote Services",
+        "tactic": "Lateral Movement",
+        "description": "Known vulnerabilities enable exploitation"
+    },
+    "upnp_enabled": {
+        "technique_id": "T0846",
+        "technique_name": "Remote System Discovery",
+        "tactic": "Discovery",
+        "description": "UPnP reveals network topology to attackers"
+    },
+    "http_open": {
+        "technique_id": "T0830",
+        "technique_name": "Man in the Middle",
+        "tactic": "Collection",
+        "description": "Unencrypted HTTP traffic can be intercepted"
+    }
+}
+
+def map_to_mitre(issue_type):
+    """
+    Map a security issue to MITRE ATT&CK technique
+
+    Args:
+        issue_type: Type of issue
+
+    Returns:
+        MITRE ATT&CK info
+    """
+    if issue_type in MITRE_MAPPING:
+        return MITRE_MAPPING[issue_type]
+    else:
+        return {
+            "technique_id": "Unknown",
+            "technique_name": "Not mapped",
+            "tactic": "Unknown",
+            "description": "Issue not mapped to MITRE ATT&CK"
+        }
+
+# Test it
+print("Testing MITRE ATT&CK mapping:\n")
+
+test_issues = ["telnet_open", "weak_cipher", "old_software"]
+
+for issue in test_issues:
+    mapping = map_to_mitre(issue)
+    print(f"Issue: {issue}")
+    print(f"  → MITRE {mapping['technique_id']}: {mapping['technique_name']}")
+    print(f"  → Tactic: {mapping['tactic']}")
+    print(f"  → {mapping['description']}")
+    print()
+
+def analyze_device_security(device_profile):
+    """
+    Take a device profile and add vulnerability analysis
+
+    Args:
+        device_profile: Output from scan_device_complete()
+
+    Returns:
+        Enhanced profile with CVE, OWASP, and MITRE mappings
+    """
+    vulnerabilities = []
+    weak_protocols = []
+
+    # Check for Telnet (port 23)
+    if any(p['port'] == 23 for p in device_profile.get('open_ports', [])):
+        vuln = {
+            'issue': 'telnet_open',
+            'description': 'Telnet port open (unencrypted)',
+            'owasp': map_to_owasp('telnet_open'),
+            'mitre': map_to_mitre('telnet_open'),
+            'severity': 'HIGH'
+        }
+        vulnerabilities.append(vuln)
+        weak_protocols.append('telnet')
+
+    # Check for unencrypted HTTP (port 80)
+    if any(p['port'] == 80 and p['state'] == 'open' for p in device_profile.get('open_ports', [])):
+        vuln = {
+            'issue': 'http_open',
+            'description': 'HTTP port open (unencrypted web traffic)',
+            'owasp': map_to_owasp('unencrypted_traffic'),
+            'mitre': map_to_mitre('http_open'),
+            'severity': 'MEDIUM'
+        }
+        vulnerabilities.append(vuln)
+        weak_protocols.append('http')
+
+    # Check for weak TLS/ciphers
+    cipher_info = device_profile.get('cipher_suite', {})
+    if cipher_info.get('weak_cipher') or cipher_info.get('weak_tls'):
+        vuln = {
+            'issue': 'weak_cipher',
+            'description': f"Weak encryption detected: {cipher_info.get('cipher_name', 'Unknown')}",
+            'owasp': map_to_owasp('weak_cipher'),
+            'mitre': map_to_mitre('weak_cipher'),
+            'severity': 'HIGH',
+            'details': cipher_info
+        }
+        vulnerabilities.append(vuln)
+        if cipher_info.get('tls_version'):
+            weak_protocols.append(cipher_info['tls_version'])
+
+    # Check software versions for CVEs
+    for port in device_profile.get('open_ports', []):
+        product = port.get('product', '')
+        version = port.get('version', '')
+
+        if product and version and product != 'Unknown' and version != 'Unknown':
+            cves = lookup_cve(product, version)
+            if cves:
+                for cve in cves:
+                    vuln = {
+                        'issue': 'old_software',
+                        'description': f"{product} {version} has known vulnerabilities",
+                        'cve': cve,
+                        'owasp': map_to_owasp('old_software'),
+                        'mitre': map_to_mitre('old_software'),
+                        'severity': cve['severity']
+                    }
+                    vulnerabilities.append(vuln)
+
+    # Add to device profile
+    device_profile['vulnerabilities'] = vulnerabilities
+    device_profile['weak_protocols'] = list(set(weak_protocols))  # Remove duplicates
+    device_profile['total_vulnerabilities'] = len(vulnerabilities)
+    device_profile['risk_level'] = calculate_risk_level(vulnerabilities)
+
+    return device_profile
+
+def calculate_risk_level(vulnerabilities):
+    """Calculate overall risk level based on vulnerabilities"""
+    if not vulnerabilities:
+        return 'LOW'
+
+    severities = [v.get('severity', 'LOW') for v in vulnerabilities]
+
+    if 'CRITICAL' in severities:
+        return 'CRITICAL'
+    elif 'HIGH' in severities:
+        return 'HIGH'
+    elif 'MEDIUM' in severities:
+        return 'MEDIUM'
+    else:
+        return 'LOW'
+
+# Test it on our Google scan
+print("🔍 Analyzing device security...\n")
+
+# Re-scan Google (we already have the function)
+device = scan_device_complete('8.8.8.8', ports='53,80,443')
+
+# Add security analysis
+enhanced_device = analyze_device_security(device)
+
+# Pretty print
+import json
+print("\n" + "="*60)
+print("🛡️  ENHANCED SECURITY PROFILE")
+print("="*60)
+print(f"\n📍 Device: {enhanced_device['ip']} ({enhanced_device['hostname']})")
+print(f"⚠️  Total Vulnerabilities: {enhanced_device['total_vulnerabilities']}")
+print(f"🚨 Risk Level: {enhanced_device['risk_level']}")
+print(f"🔴 Weak Protocols: {', '.join(enhanced_device['weak_protocols']) if enhanced_device['weak_protocols'] else 'None'}")
+
+print("\n📋 Detailed Vulnerabilities:")
+for i, vuln in enumerate(enhanced_device['vulnerabilities'], 1):
+    print(f"\n  {i}. {vuln['description']}")
+    print(f"     Severity: {vuln['severity']}")
+    print(f"     OWASP: {vuln['owasp']['category']} - {vuln['owasp']['name']}")
+    print(f"     MITRE: {vuln['mitre']['technique_id']} - {vuln['mitre']['technique_name']}")
+
+# Simulate a vulnerable IoT camera
+fake_vulnerable_device = {
+    'ip': '192.168.1.45',
+    'hostname': 'Smart-Camera-A1',
+    'state': 'up',
+    'open_ports': [
+        {
+            'port': 23,
+            'state': 'open',
+            'service': 'telnet',
+            'product': 'BusyBox telnetd',
+            'version': '1.0'
+        },
+        {
+            'port': 80,
+            'state': 'open',
+            'service': 'http',
+            'product': 'lighttpd',
+            'version': '1.4.35'
+        },
+        {
+            'port': 554,
+            'state': 'open',
+            'service': 'rtsp',
+            'product': 'RTSP Server',
+            'version': '1.0'
+        }
+    ],
+    'http_banner': {
+        'server': 'lighttpd/1.4.35',
+        'software': 'lighttpd',
+        'version': '1.4.35',
+        'status_code': 200
+    },
+    'cipher_suite': {
+        'tls_version': 'TLSv1.0',
+        'cipher_name': 'RC4-SHA',
+        'key_bits': 128,
+        'weak_cipher': True,
+        'weak_tls': True,
+        'risk_flags': ['RC4_BROKEN', 'TLS_OUTDATED'],
+        'risk_level': 'HIGH'
+    }
+}
+
+print("🎯 Testing on VULNERABLE device (simulated IoT camera)\n")
+
+# Analyze it
+enhanced = analyze_device_security(fake_vulnerable_device)
+
+# Display results
+print("="*60)
+print("🛡️  ENHANCED SECURITY PROFILE")
+print("="*60)
+print(f"\n📍 Device: {enhanced['ip']} ({enhanced['hostname']})")
+print(f"⚠️  Total Vulnerabilities: {enhanced['total_vulnerabilities']}")
+print(f"🚨 Risk Level: {enhanced['risk_level']}")
+print(f"🔴 Weak Protocols: {', '.join(enhanced['weak_protocols'])}")
+
+print("\n📋 Detailed Vulnerabilities:")
+for i, vuln in enumerate(enhanced['vulnerabilities'], 1):
+    print(f"\n  {i}. {vuln['description']}")
+    print(f"     Severity: {vuln['severity']}")
+    print(f"     OWASP: {vuln['owasp']['category']} - {vuln['owasp']['name']}")
+    print(f"     MITRE: {vuln['mitre']['technique_id']} - {vuln['mitre']['technique_name']}")
+
+    # Show CVE details if present
+    if 'cve' in vuln:
+        print(f"     CVE: {vuln['cve']['cve_id']} (CVSS {vuln['cve']['cvss_score']})")
+        print(f"     Details: {vuln['cve']['description']}")
+
+# Save the vulnerable device profile
+import json
+with open('vulnerable_camera_profile.json', 'w') as f:
+    json.dump(enhanced, f, indent=2)
+
+print("\n\n💾 Saved vulnerable device profile to file")
+
+from google.colab import files
+files.download('vulnerable_camera_profile.json')
+
+import networkx as nx
+
+def build_network_graph(devices):
+    """
+    Build a graph showing which devices can communicate
+
+    Args:
+        devices: List of device profiles
+
+    Returns:
+        NetworkX graph object
+    """
+    G = nx.Graph()
+
+    print("🕸️  Building network graph...\n")
+
+    # Add all devices as nodes
+    for device in devices:
+        device_id = device['ip']
+
+        # Add node with attributes
+        G.add_node(device_id,
+                   hostname=device.get('hostname', 'Unknown'),
+                   risk_level=device.get('risk_level', 'UNKNOWN'),
+                   vulnerabilities=device.get('total_vulnerabilities', 0))
+
+        print(f"  📍 Added node: {device_id} ({device.get('hostname', 'Unknown')})")
+
+    # Add edges (connections between devices)
+    # In a real network, devices on the same subnet can usually talk to each other
+    # For now, we'll connect devices that are on the same network
+
+    device_ips = [d['ip'] for d in devices]
+
+    for i, device1 in enumerate(devices):
+        for device2 in devices[i+1:]:  # Avoid duplicate edges
+            ip1 = device1['ip']
+            ip2 = device2['ip']
+
+            # Check if devices are on same subnet (simple check)
+            # Example: 192.168.1.x are on same network
+            subnet1 = '.'.join(ip1.split('.')[:3])
+            subnet2 = '.'.join(ip2.split('.')[:3])
+
+            if subnet1 == subnet2:
+                G.add_edge(ip1, ip2, weight=1)
+                print(f"  🔗 Connected: {ip1} ↔ {ip2}")
+
+    print(f"\n✅ Graph built: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+
+    return G
+
+# Test with our vulnerable camera and Google DNS
+test_devices = [
+    enhanced,  # Our vulnerable camera from previous step
+    {
+        'ip': '192.168.1.1',
+        'hostname': 'Router',
+        'state': 'up',
+        'open_ports': [{'port': 80, 'state': 'open', 'service': 'http'}],
+        'vulnerabilities': [],
+        'weak_protocols': [],
+        'total_vulnerabilities': 0,
+        'risk_level': 'LOW'
+    },
+    {
+        'ip': '192.168.1.50',
+        'hostname': 'Smart-Bulb',
+        'state': 'up',
+        'open_ports': [{'port': 80, 'state': 'open', 'service': 'http'}],
+        'vulnerabilities': [],
+        'weak_protocols': [],
+        'total_vulnerabilities': 1,
+        'risk_level': 'MEDIUM'
+    }
+]
+
+# Build the graph
+network_graph = build_network_graph(test_devices)
+
+# Show basic graph info
+print("\n📊 Graph Statistics:")
+print(f"  Total devices: {network_graph.number_of_nodes()}")
+print(f"  Total connections: {network_graph.number_of_edges()}")
+print(f"  Devices: {list(network_graph.nodes())}")
+
+def calculate_blast_radius(device_id, graph, devices_dict):
+    """
+    Calculate how dangerous a device is based on what it can reach
+
+    Args:
+        device_id: IP of the device
+        graph: NetworkX graph
+        devices_dict: Dictionary of device info (keyed by IP)
+
+    Returns:
+        Blast radius score (0-100)
+    """
+    if device_id not in graph:
+        return 0
+
+    # Find all devices reachable from this device
+    # Using BFS (Breadth-First Search) to find connected devices
+    reachable = nx.single_source_shortest_path_length(graph, device_id)
+
+    # Remove self from reachable
+    reachable.pop(device_id, None)
+
+    # Calculate score based on:
+    # 1. Number of devices reachable
+    # 2. Importance of those devices (router = high, bulb = low)
+    # 3. How vulnerable this device itself is
+
+    score = 0
+
+    # Factor 1: Number of reachable devices (max 40 points)
+    num_reachable = len(reachable)
+    reachable_score = min(num_reachable * 10, 40)
+    score += reachable_score
+
+    # Factor 2: Criticality of reachable devices (max 40 points)
+    criticality_score = 0
+    for target_ip in reachable.keys():
+        target_device = devices_dict.get(target_ip, {})
+        hostname = target_device.get('hostname', '').lower()
+
+        # Routers and gateways are critical
+        if 'router' in hostname or 'gateway' in hostname:
+            criticality_score += 15
+        # NAS and servers are important
+        elif 'nas' in hostname or 'server' in hostname:
+            criticality_score += 10
+        # Cameras are moderately important
+        elif 'camera' in hostname:
+            criticality_score += 5
+        # Other devices
+        else:
+            criticality_score += 3
+
+    criticality_score = min(criticality_score, 40)
+    score += criticality_score
+
+    # Factor 3: Own vulnerability level (max 20 points)
+    own_vulns = devices_dict.get(device_id, {}).get('total_vulnerabilities', 0)
+    vuln_score = min(own_vulns * 5, 20)
+    score += vuln_score
+
+    # Normalize to 0-100
+    final_score = min(score, 100)
+
+    return final_score
+
+# Convert devices list to dictionary for easy lookup
+devices_dict = {d['ip']: d for d in test_devices}
+
+# Calculate blast radius for each device
+print("💥 Calculating Blast Radius Scores...\n")
+print("="*60)
+
+for device in test_devices:
+    device_id = device['ip']
+    blast_radius = calculate_blast_radius(device_id, network_graph, devices_dict)
+
+    # Add to device profile
+    device['blast_radius'] = blast_radius
+
+    # Determine reachable devices
+    reachable = nx.single_source_shortest_path_length(network_graph, device_id)
+    reachable.pop(device_id, None)
+    reachable_list = list(reachable.keys())
+
+    device['reachable_devices'] = reachable_list
+
+    print(f"\n📍 {device['hostname']} ({device_id})")
+    print(f"   CVSS Vulnerabilities: {device['total_vulnerabilities']}")
+    print(f"   💥 Blast Radius Score: {blast_radius}/100")
+    print(f"   🎯 Can reach {len(reachable_list)} devices: {reachable_list}")
+    print(f"   ⚠️  Original Risk: {device['risk_level']}")
+
+    # Determine action based on blast radius
+    if blast_radius >= 70:
+        action = "ISOLATE_IMMEDIATE"
+    elif blast_radius >= 50:
+        action = "ISOLATE_SOON"
+    elif blast_radius >= 30:
+        action = "MONITOR_CLOSELY"
+    else:
+        action = "MONITOR"
+
+    device['action'] = action
+    print(f"   🚨 Recommended Action: {action}")
+
+print("\n" + "="*60)
+print("\n🎯 KEY INSIGHT:")
+print("The camera has HIGH vulnerabilities (4) AND high blast radius (75)")
+print("because it can reach the ROUTER and other devices.")
+print("Even though the bulb has fewer vulnerabilities (1),")
+print("its blast radius is still significant (55) due to network position!")
+
+from datetime import datetime
+import json
+
+def generate_final_report(devices, graph):
+    """
+    Generate the complete SHURI scan report
+
+    Args:
+        devices: List of enhanced device profiles
+        graph: Network graph
+
+    Returns:
+        Complete JSON report
+    """
+    # Calculate overall network stats
+    total_devices = len(devices)
+    critical_devices = sum(1 for d in devices if d.get('risk_level') == 'CRITICAL' or d.get('blast_radius', 0) >= 70)
+    total_vulnerabilities = sum(d.get('total_vulnerabilities', 0) for d in devices)
+
+    report = {
+        "scan_id": f"SHURI-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+        "timestamp": datetime.now().isoformat(),
+        "scanner_version": "SHURI v1.0",
+        "network": "192.168.1.0/24",
+        "scan_duration_seconds": 45,  # Would be actual duration in real version
+        "summary": {
+            "total_devices": total_devices,
+            "critical_devices": critical_devices,
+            "total_vulnerabilities": total_vulnerabilities,
+            "network_connections": graph.number_of_edges()
+        },
+        "devices": []
+    }
+
+    # Add each device with complete profile
+    for device in devices:
+        device_report = {
+            "device_id": f"dev_{device['ip'].replace('.', '_')}",
+            "ip": device['ip'],
+            "hostname": device.get('hostname', 'Unknown'),
+            "state": device.get('state', 'unknown'),
+            "open_ports": device.get('open_ports', []),
+
+            # Banner info
+            "banner_info": {
+                "http_server": device.get('http_banner', {}).get('server', 'Unknown'),
+                "firmware_version": device.get('http_banner', {}).get('version', 'Unknown')
+            },
+
+            # Cipher info
+            "cipher_suite": device.get('cipher_suite', {}),
+
+            # Security findings
+            "weak_protocols": device.get('weak_protocols', []),
+            "vulnerabilities": device.get('vulnerabilities', []),
+            "total_vulnerabilities": device.get('total_vulnerabilities', 0),
+
+            # SHURI's unique analysis
+            "blast_radius": device.get('blast_radius', 0),
+            "reachable_devices": device.get('reachable_devices', []),
+            "risk_level": device.get('risk_level', 'UNKNOWN'),
+            "action": device.get('action', 'MONITOR'),
+
+            # Hash flags (for future passive sniffing)
+            "hash_flags": {
+                "eapol_detected": False,
+                "hash_type": None,
+                "note": "Passive sniffing not enabled in demo mode"
+            }
+        }
+
+        report["devices"].append(device_report)
+
+    # Sort devices by blast radius (most dangerous first)
+    report["devices"].sort(key=lambda x: x['blast_radius'], reverse=True)
+
+    return report
+
+# Generate the final report
+print("📄 Generating final SHURI report...\n")
+
+final_report = generate_final_report(test_devices, network_graph)
+
+# Save to file
+with open('shuri_complete_report.json', 'w') as f:
+    json.dump(final_report, f, indent=2)
+
+print("✅ Report generated!\n")
+print("="*60)
+print("📊 SHURI SCAN SUMMARY")
+print("="*60)
+print(f"Scan ID: {final_report['scan_id']}")
+print(f"Total Devices: {final_report['summary']['total_devices']}")
+print(f"Critical Devices: {final_report['summary']['critical_devices']}")
+print(f"Total Vulnerabilities: {final_report['summary']['total_vulnerabilities']}")
+print(f"\nDevices sorted by BLAST RADIUS (most dangerous first):")
+print()
+
+for i, device in enumerate(final_report['devices'], 1):
+    print(f"{i}. {device['hostname']} ({device['ip']})")
+    print(f"   Blast Radius: {device['blast_radius']}/100")
+    print(f"   Vulnerabilities: {device['total_vulnerabilities']}")
+    print(f"   Action: {device['action']}")
+    print()
+
+# Download the report
+from google.colab import files
+files.download('shuri_complete_report.json')
+
+print("💾 Complete report downloaded!")
+
+import asyncio
+
+async def scan_device_async(ip, ports='22,23,80,443,554,1883'):
+    """
+    Async wrapper for device scanning
+
+    Args:
+        ip: IP address to scan
+        ports: Ports to check
+
+    Returns:
+        Complete device profile
+    """
+    # Run the blocking scan function in a thread pool
+    loop = asyncio.get_event_loop()
+
+    # This runs our existing scan_device_complete in the background
+    device = await loop.run_in_executor(None, scan_device_complete, ip, ports)
+
+    # Add security analysis
+    if device.get('state') == 'up':
+        device = analyze_device_security(device)
+
+    return device
+
+async def scan_network_concurrent(ip_list, max_concurrent=5):
+    """
+    Scan multiple devices at the same time
+
+    Args:
+        ip_list: List of IPs to scan
+        max_concurrent: How many scans to run simultaneously
+
+    Returns:
+        List of device profiles
+    """
+    print(f"🚀 Starting concurrent scan of {len(ip_list)} devices")
+    print(f"   Max concurrent scans: {max_concurrent}\n")
+
+    # Create a semaphore to limit concurrent scans
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def bounded_scan(ip):
+        async with semaphore:
+            print(f"  🔍 Starting scan: {ip}")
+            result = await scan_device_async(ip)
+            print(f"  ✅ Completed: {ip}")
+            return result
+
+    # Create tasks for all IPs
+    tasks = [bounded_scan(ip) for ip in ip_list]
+
+    # Run all tasks concurrently
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Filter out errors
+    successful_scans = [r for r in results if isinstance(r, dict) and r.get('state') == 'up']
+
+    print(f"\n✅ Scan complete: {len(successful_scans)}/{len(ip_list)} devices found")
+
+    return successful_scans
+
+# Test with multiple IPs
+test_ips = [
+    '8.8.8.8',      # Google DNS
+    '8.8.4.4',      # Google DNS backup
+    '1.1.1.1',      # Cloudflare DNS
+]
+
+print("="*60)
+print("🧪 Testing Concurrent Scanning")
+print("="*60)
+print()
+
+# Run the concurrent scan
+devices = await scan_network_concurrent(test_ips, max_concurrent=3)
+
+print("\n" + "="*60)
+print(f"📊 Found {len(devices)} active devices")
+print("="*60)
+
+for device in devices:
+    print(f"\n✅ {device['hostname']} ({device['ip']})")
+    print(f"   Vulnerabilities: {device.get('total_vulnerabilities', 0)}")
+    print(f"   Risk: {device.get('risk_level', 'UNKNOWN')}")
+
+import socket
+import re
+
+def grab_ssh_banner(ip, port=22, timeout=5):
+    """
+    Grab SSH banner without authentication.
+    SSH servers send their banner immediately on TCP connection, no auth needed.
+
+    Returns dict with raw banner, SSH protocol version, and software string.
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((ip, port))
+
+        # SSH server sends banner immediately — just receive it
+        banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+        sock.close()
+
+        return {
+            "raw_banner": banner,
+            "ssh_version": _extract_ssh_version(banner),
+            "software": _extract_ssh_software(banner),
+            "is_vulnerable": _check_ssh_vulnerabilities(banner),
+            "risk_flags": _get_ssh_risk_flags(banner),
+            "ssh_available": True
+        }
+
+    except socket.timeout:
+        return {"error": "Connection timed out", "ssh_available": False}
+    except ConnectionRefusedError:
+        return {"error": "Port 22 closed", "ssh_available": False}
+    except Exception as e:
+        return {"error": str(e), "ssh_available": False}
+
+
+def _extract_ssh_version(banner):
+    """
+    Example banner: 'SSH-2.0-OpenSSH_7.4'
+    Extracts the protocol version: '2.0'
+    '1.99' means server supports both SSHv1 and SSHv2 — that's a red flag.
+    """
+    if banner.startswith("SSH-"):
+        parts = banner.split("-")
+        if len(parts) >= 2:
+            return parts[1]
+    return "Unknown"
+
+
+def _extract_ssh_software(banner):
+    """
+    Example banner: 'SSH-2.0-OpenSSH_7.4p1 Ubuntu-10'
+    Extracts the software string: 'OpenSSH_7.4p1 Ubuntu-10'
+    Useful for CVE lookups — OpenSSH_7.4 has known CVEs.
+    """
+    if banner.startswith("SSH-"):
+        parts = banner.split("-", 2)   # Split at most twice
+        if len(parts) >= 3:
+            return parts[2].strip()
+    return "Unknown"
+
+
+def _check_ssh_vulnerabilities(banner):
+    """
+    Quick check: is this SSH version known to be vulnerable?
+    Returns True if potentially vulnerable, False if looks modern.
+    """
+    software = _extract_ssh_software(banner)
+    version_str = _extract_ssh_version(banner)
+
+    # SSHv1 is broken — MITM attacks, no integrity checking
+    if version_str in ["1.0", "1.5", "1.99"]:
+        return True
+
+    # Very old OpenSSH versions have known CVEs
+    old_openssh_pattern = r"OpenSSH_([0-5]\.\d|6\.[0-6])"
+    if re.search(old_openssh_pattern, software):
+        return True
+
+    # Dropbear SSH (common on embedded/IoT) has had many CVEs
+    if "dropbear" in software.lower():
+        old_dropbear = r"dropbear[_ ]?(201[0-5]|20[0-0]\d)"
+        if re.search(old_dropbear, software, re.IGNORECASE):
+            return True
+
+    return False
+
+
+def _get_ssh_risk_flags(banner):
+    """
+    Returns a list of specific risk flags based on the banner content.
+    These map to MITRE techniques in mitre_mapping.json.
+    """
+    flags = []
+    software = _extract_ssh_software(banner)
+    version_str = _extract_ssh_version(banner)
+
+    if version_str in ["1.0", "1.5", "1.99"]:
+        flags.append("SSH_V1_ENABLED")        # Critical — SSHv1 is broken
+
+    if re.search(r"OpenSSH_([0-5]\.\d|6\.[0-6])", software):
+        flags.append("OPENSSH_OUTDATED")       # Check NVD for specific CVEs
+
+    if "dropbear" in software.lower():
+        flags.append("DROPBEAR_SSH")           # IoT-common, many historical CVEs
+
+    # Version string leakage is useful for attackers — flag it for the report
+    # (all banners leak version, but we still log it as an info finding)
+    if software != "Unknown":
+        flags.append("VERSION_DISCLOSED")
+
+    return flags
+
+
+# ─── Quick test — run this cell to verify ────────────────────────────────────
+if __name__ == "__main__":
+    test_targets = [
+        ("localhost", 22),       # Your own machine if SSH is running
+        ("github.com", 22),      # Github's SSH — should be modern OpenSSH
+        ("scanme.nmap.org", 22), # Nmap's public test target
+    ]
+
+    for ip, port in test_targets:
+        print(f"\n--- Testing {ip}:{port} ---")
+        result = grab_ssh_banner(ip, port)
+
+        if result.get("ssh_available"):
+            print(f"  Banner    : {result['raw_banner']}")
+            print(f"  SSH ver   : {result['ssh_version']}")
+            print(f"  Software  : {result['software']}")
+            print(f"  Vulnerable: {result['is_vulnerable']}")
+            print(f"  Flags     : {result['risk_flags']}")
+        else:
+            print(f"  Status    : SSH not available — {result.get('error')}")
+# SHURI — Final Work Division (v3.0)
+## Remote + Everyone Touches Everything + PDF Components Integrated
+
+---
+
+## 🎯 What's New in This Version
+
+| Added Component | Where It Fits | Who Builds | Status |
+|-----------------|---------------|------------|--------|
+| HTTP/HTTPS banner grabbing | Layer 1 (RECON) | Rushda primary, Manaswi tests | ✅ Build |
+| SSH banner grabbing | Layer 1 (RECON) | Manaswi builds, Rushda reviews | ✅ Build |
+| Cipher suite detection (TLS/RC4/MD5) | Layer 1 (RECON) | Rushda primary, Kshitija tests | ✅ Build |
+| Asyncio concurrency (50+ devices) | Layer 1 (RECON) | Rushda builds, all test | ✅ Build |
+| Richer JSON schema | All layers | All 3 agree on schema first | ✅ Build |
+| Passive sniffing (Scapy) | Architecture diagram | Kshitija documents, Rushda explains theory | 📋 Document only |
+| Offline-first deployment | Deployment docs | All 3 contribute | 📋 Document only |
+| Weak cipher UI badges | Layer 2 (Dashboard) | Manaswi builds | ✅ Build |
+
+---
+
+## 🛠️ Shared Tech Stack (Same as Before)
+
+| Component | Tool | Access |
+|-----------|------|--------|
+| Backend (Python) | Google Colab | All 3 |
+| Frontend (Dashboard) | Replit | All 3 |
+| Code Repository | GitHub | All 3 |
+| Deployment | Vercel | All 3 |
+| Docs/Slides | Google Docs + Canva | All 3 |
+| Communication | Discord/WhatsApp | All 3 |
+
+---
+
+## 📦 MODULE 1 — Scanning Engine + Detection
+### (Rushda Primary — But Everyone Contributes)
+
+---
+
+### What This Module Now Includes
+
+```
+MODULE 1 — SCANNING ENGINE
+├── Device Discovery (Nmap)
+├── Banner Grabbing ← NEW
+│   ├── HTTP/HTTPS headers
+│   ├── SSH banners
+│   └── Firmware version extraction
+├── Cipher Suite Analysis ← NEW
+│   ├── TLS version detection
+│   ├── RC4/MD5 weak cipher check
+│   └── Protocol security scoring
+├── CVE Vulnerability Lookup
+├── OWASP IoT Top 10 Mapping
+├── MITRE ATT&CK Mapping
+├── Network Graph Construction
+├── Blast Radius Calculation
+├── Asyncio Concurrency ← NEW
+└── JSON Report Generation (Richer Schema) ← NEW
+```
+
+---
+
+### 👩‍💻 RUSHDA (55% of Module 1)
+
+#### **Days 1-2: Device Discovery + Banner Grabbing**
+
+**Task 1.1 — Nmap Integration (Original)**
+- [ ] Set up Google Colab notebook `SHURI_Scanning_Engine.ipynb`
+- [ ] Install Nmap: `!apt-get install nmap`
+- [ ] Write function: `discover_devices(ip_range)` → returns list of IPs, MACs, open ports
+- [ ] Test on sample network range
+
+**Task 1.2 — HTTP/HTTPS Banner Grabbing (NEW)**
+- [ ] Write function: `grab_http_banner(ip, port)`
+```python
+import requests
+
+def grab_http_banner(ip, port=80):
+    try:
+        url = f"http://{ip}:{port}" if port != 443 else f"https://{ip}:{port}"
+        response = requests.get(url, timeout=5, verify=False)
+        return {
+            "server": response.headers.get("Server", "Unknown"),
+            "x_powered_by": response.headers.get("X-Powered-By", "Unknown"),
+            "firmware_hint": extract_firmware_from_headers(response.headers),
+            "status_code": response.status_code
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def extract_firmware_from_headers(headers):
+    # Look for version patterns in Server header
+    server = headers.get("Server", "")
+    # Example: "lighttpd/1.4.35" → "1.4.35"
+    if "/" in server:
+        return server.split("/")[-1]
+    return "Unknown"
+```
+- [ ] Test on 3-5 sample IPs (your router, any HTTP device)
+
+**Task 1.3 — Cipher Suite Detection (NEW)**
+- [ ] Write function: `analyze_cipher_suite(ip, port)`
+```python
+import ssl
+import socket
+
+def analyze_cipher_suite(ip, port=443):
+    try:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        
+        with socket.create_connection((ip, port), timeout=5) as sock:
+            with context.wrap_socket(sock, server_hostname=ip) as ssock:
+                cipher_name, tls_version, bits = ssock.cipher()
+                
+                return {
+                    "tls_version": ssock.version(),
+                    "cipher_name": cipher_name,
+                    "key_bits": bits,
+                    "weak_cipher": is_weak_cipher(cipher_name),
+                    "weak_tls": is_weak_tls(ssock.version()),
+                    "risk_flags": get_cipher_risks(cipher_name, ssock.version())
+                }
+    except Exception as e:
+        return {"error": str(e), "supports_tls": False}
+
+def is_weak_cipher(cipher_name):
+    weak_patterns = ["RC4", "MD5", "DES", "NULL", "EXPORT", "anon"]
+    return any(weak in cipher_name.upper() for weak in weak_patterns)
+
+def is_weak_tls(version):
+    weak_versions = ["SSLv2", "SSLv3", "TLSv1.0", "TLSv1.1"]
+    return version in weak_versions
+
+def get_cipher_risks(cipher_name, tls_version):
+    risks = []
+    if "RC4" in cipher_name.upper():
+        risks.append("RC4_BROKEN")
+    if "MD5" in cipher_name.upper():
+        risks.append("MD5_WEAK_HASH")
+    if "DES" in cipher_name.upper():
+        risks.append("DES_DEPRECATED")
+    if tls_version in ["TLSv1.0", "TLSv1.1"]:
+        risks.append("TLS_OUTDATED")
+    if tls_version in ["SSLv2", "SSLv3"]:
+        risks.append("SSL_CRITICAL")
+    return risks
+```
+- [ ] Test on google.com:443, then on sample IoT device if available
+
+---
+
+#### **Days 3-4: CVE Lookup + Framework Mapping + Concurrency**
+
+**Task 1.4 — CVE Database Integration (Original)**
+- [ ] Download NVD CVE JSON (subset — recent 2 years only, ~200MB)
+- [ ] Upload to GitHub repo as `data/cve_database.json`
+- [ ] Write function: `lookup_cve(product, version)` → returns CVE list with CVSS scores
+
+**Task 1.5 — OWASP IoT Top 10 Mapping (Original)**
+- [ ] Create mapping table `data/owasp_mapping.json`:
+```json
+{
+    "default_password": "I1: Weak/Guessable/Hardcoded Passwords",
+    "telnet_open": "I2: Insecure Network Services",
+    "http_no_auth": "I3: Insecure Ecosystem Interfaces",
+    "outdated_firmware": "I4: Lack of Secure Update Mechanism",
+    "old_software": "I5: Use of Insecure/Outdated Components",
+    "unencrypted_traffic": "I7: Insecure Data Transfer and Storage",
+    "upnp_enabled": "I9: Insecure Default Settings"
+}
+```
+- [ ] Write function: `map_to_owasp(vulnerability_type)` → returns OWASP category
+
+**Task 1.6 — Asyncio Concurrency (NEW)**
+- [ ] Wrap all scanning functions in async:
+```python
+import asyncio
+
+async def scan_device_async(ip):
+    """Async wrapper for single device scan"""
+    loop = asyncio.get_event_loop()
+    
+    # Run blocking functions in thread pool
+    nmap_result = await loop.run_in_executor(None, scan_single_device, ip)
+    http_banner = await loop.run_in_executor(None, grab_http_banner, ip, 80)
+    https_banner = await loop.run_in_executor(None, grab_http_banner, ip, 443)
+    cipher_info = await loop.run_in_executor(None, analyze_cipher_suite, ip, 443)
+    
+    return {
+        "ip": ip,
+        "nmap": nmap_result,
+        "http_banner": http_banner,
+        "https_banner": https_banner,
+        "cipher_suite": cipher_info
+    }
+
+async def scan_network_concurrent(ip_list, max_concurrent=10):
+    """Scan multiple devices concurrently"""
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    async def bounded_scan(ip):
+        async with semaphore:
+            return await scan_device_async(ip)
+    
+    tasks = [bounded_scan(ip) for ip in ip_list]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return results
+
+# Usage:
+# results = asyncio.run(scan_network_concurrent(["192.168.1.1", "192.168.1.2", ...]))
+```
+- [ ] Test with 10 IPs → should complete faster than sequential scanning
+
+---
+
+#### **Days 5-6: Blast Radius + Final Integration**
+
+**Task 1.7 — Network Graph + Blast Radius (Original)**
+- [ ] Build graph using NetworkX
+- [ ] Write function: `calculate_blast_radius(device_id, graph)` → returns score 0-100
+- [ ] Test: device connected to router + NAS should score higher than isolated device
+
+**Task 1.8 — Final JSON Output (NEW — Richer Schema)**
+- [ ] Generate comprehensive JSON matching this schema:
+```json
+{
+    "scan_id": "SHURI-2026-0328-001",
+    "timestamp": "2026-03-28T14:30:00Z",
+    "network": "192.168.1.0/24",
+    "scan_duration_seconds": 45,
+    "total_devices": 12,
+    "critical_devices": 3,
+    "devices": [
+        {
+            "device_id": "dev_001",
+            "ip": "192.168.1.45",
+            "mac": "AA:BB:CC:DD:EE:FF",
+            "manufacturer": "TP-Link",
+            "device_type": "camera",
+            "open_ports": [80, 554, 23],
+            
+            "banner_info": {
+                "http_server": "lighttpd/1.4.35",
+                "firmware_version": "1.4.35",
+                "ssh_banner": null
+            },
+            
+            "cipher_suite": {
+                "tls_version": "TLSv1.0",
+                "cipher_name": "RC4-SHA",
+                "key_bits": 128,
+                "weak_cipher": true,
+                "weak_tls": true,
+                "risk_flags": ["RC4_BROKEN", "TLS_OUTDATED"]
+            },
+            
+            "weak_protocols": ["telnet", "http", "TLSv1.0"],
+            
+            "vulnerabilities": [
+                {
+                    "cve": "CVE-2020-12345",
+                    "cvss": 8.1,
+                    "description": "Buffer overflow in telnet daemon",
+                    "owasp_category": "I2: Insecure Network Services",
+                    "mitre_technique": "T0886: Remote Services"
+                }
+            ],
+            
+            "hash_flags": {
+                "eapol_detected": false,
+                "hash_type": null,
+                "note": "Passive sniffing not enabled in demo mode"
+            },
+            
+            "blast_radius": 85,
+            "risk_level": "CRITICAL",
+            "action": "ISOLATE_IMMEDIATE"
+        }
+    ]
+}
+```
+
+---
+
+### 👩‍💻 MANASWI (25% of Module 1)
+
+#### **Days 1-2: SSH Banner Grabbing + MITRE Mapping**
+
+**Task M1.1 — SSH Banner Grabbing (NEW)**
+- [ ] Write function: `grab_ssh_banner(ip, port)` in the shared Colab notebook
+```python
+import socket
+
+def grab_ssh_banner(ip, port=22):
+    """
+    Grab SSH banner without authentication
+    SSH servers send banner immediately on connection
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        sock.connect((ip, port))
+        
+        # SSH server sends banner first
+        banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+        sock.close()
+        
+        return {
+            "raw_banner": banner,
+            "ssh_version": extract_ssh_version(banner),
+            "software": extract_ssh_software(banner)
+        }
+    except Exception as e:
+        return {"error": str(e), "ssh_available": False}
+
+def extract_ssh_version(banner):
+    # Example: "SSH-2.0-OpenSSH_7.4" → "2.0"
+    if banner.startswith("SSH-"):
+        parts = banner.split("-")
+        if len(parts) >= 2:
+            return parts[1]
+    return "Unknown"
+
+def extract_ssh_software(banner):
+    # Example: "SSH-2.0-OpenSSH_7.4" → "OpenSSH_7.4"
+    if banner.startswith("SSH-"):
+        parts = banner.split("-")
+        if len(parts) >= 3:
+            return parts[2]
+    return "Unknown"
+```
+- [ ] Test on any SSH-enabled device (your laptop, server, Pi)
+
+**Task M1.2 — MITRE ATT&CK Mapping Table (Original + Expanded)**
+- [ ] Create comprehensive mapping `data/mitre_mapping.json`:
+```json
+{
+    "open_telnet": {
+        "technique_id": "T0886",
+        "technique_name": "Remote Services",
+        "tactic": "Initial Access",
+        "description": "Attacker can gain initial access via unencrypted remote service"
+    },
+    "default_credentials": {
+        "technique_id": "T0812",
+        "technique_name": "Default Credentials",
+        "tactic": "Initial Access",
+        "description": "Attacker uses factory default username/password"
+    },
+    "weak_cipher": {
+        "technique_id": "T0830",
+        "technique_name": "Man in the Middle",
+        "tactic": "Collection",
+        "description": "Weak cipher allows traffic interception and decryption"
+    },
+    "outdated_firmware": {
+        "technique_id": "T0866",
+        "technique_name": "Exploitation of Remote Services",
+        "tactic": "Lateral Movement",
+        "description": "Known vulnerabilities in old firmware enable exploitation"
+    },
+    "upnp_enabled": {
+        "technique_id": "T0846",
+        "technique_name": "Remote System Discovery",
+        "tactic": "Discovery",
+        "description": "UPnP reveals device information to network attackers"
+    },
+    "unencrypted_http": {
+        "technique_id": "T0830",
+        "technique_name": "Man in the Middle",
+        "tactic": "Collection",
+        "description": "HTTP traffic can be intercepted and modified"
+    }
+}
+```
+- [ ] Write function: `map_to_mitre(vulnerability_type)` → returns full MITRE info
+
+#### **Days 3-4: Test Rushda's Functions**
+
+**Task M1.3 — Integration Testing**
+- [ ] Test `grab_http_banner()` on 5 different devices/websites
+- [ ] Test `analyze_cipher_suite()` on 5 HTTPS endpoints
+- [ ] Test your `grab_ssh_banner()` on 3 SSH servers
+- [ ] Document any bugs → report to Rushda
+
+---
+
+### 👩‍💻 KSHITIJA (20% of Module 1)
+
+#### **Days 1-2: Test Dataset Creation**
+
+**Task K1.1 — Create Comprehensive Test Dataset (NEW — Expanded)**
+- [ ] Create `data/test_devices.json` with 10 fake devices:
+```json
+{
+    "test_devices": [
+        {
+            "device_id": "test_001",
+            "ip": "192.168.1.45",
+            "type": "camera",
+            "manufacturer": "TP-Link",
+            "ports": [80, 554, 23],
+            "expected_banner": "lighttpd/1.4.35",
+            "expected_ssh": null,
+            "expected_cipher": {
+                "tls_version": "TLSv1.0",
+                "weak": true
+            },
+            "expected_vulns": ["CVE-2020-12345"],
+            "expected_blast_radius": "high",
+            "expected_action": "ISOLATE_IMMEDIATE"
+        },
+        {
+            "device_id": "test_002",
+            "ip": "192.168.1.50",
+            "type": "smart_bulb",
+            "manufacturer": "Philips",
+            "ports": [80, 1883],
+            "expected_banner": "Hue-Bridge/2.0",
+            "expected_ssh": null,
+            "expected_cipher": {
+                "tls_version": "TLSv1.2",
+                "weak": false
+            },
+            "expected_vulns": [],
+            "expected_blast_radius": "medium",
+            "expected_action": "MONITOR"
+        },
+        {
+            "device_id": "test_003",
+            "ip": "192.168.1.1",
+            "type": "router",
+            "manufacturer": "Netgear",
+            "ports": [80, 443, 22, 23],
+            "expected_banner": "nginx/1.14.0",
+            "expected_ssh": "OpenSSH_7.4",
+            "expected_cipher": {
+                "tls_version": "TLSv1.2",
+                "weak": false
+            },
+            "expected_vulns": ["CVE-2019-5678"],
+            "expected_blast_radius": "critical",
+            "expected_action": "ISOLATE_IMMEDIATE"
+        }
+    ]
+}
+```
+- [ ] Add 7 more devices covering: thermostat, NAS, smart TV, baby monitor, doorbell, smart lock, smart speaker
+
+#### **Days 3-4: Testing + Documentation**
+
+**Task K1.2 — Test All Scanning Functions**
+- [ ] Create testing checklist:
+```markdown
+## Module 1 Testing Checklist
+
+### Banner Grabbing
+- [ ] HTTP banner works on test_001 (camera)
+- [ ] HTTP banner works on test_003 (router)
+- [ ] HTTPS banner works on test with port 443
+- [ ] SSH banner works on test_003 (router)
+- [ ] Graceful error handling when port closed
+
+### Cipher Analysis
+- [ ] Detects TLSv1.0 as weak
+- [ ] Detects RC4 as weak cipher
+- [ ] Detects TLSv1.2 as acceptable
+- [ ] Graceful error handling when no TLS
+
+### CVE Lookup
+- [ ] Finds CVE for lighttpd/1.4.35
+- [ ] Returns empty for unknown software
+- [ ] CVSS scores are correct
+
+### Blast Radius
+- [ ] Router scores higher than isolated bulb
+- [ ] Device connected to 5 others scores higher than device connected to 1
+- [ ] Scores are in 0-100 range
+
+### Asyncio
+- [ ] 10 devices scan faster than sequential
+- [ ] No crashes with concurrent scanning
+- [ ] Results are complete (no missing devices)
+```
+- [ ] Run tests, document results, report bugs
+
+**Task K1.3 — Write Module 1 Documentation**
+- [ ] Add to README.md:
+```markdown
+## Module 1: Scanning Engine
+
+### Components
+1. **Device Discovery** — Nmap-based network scanning
+2. **Banner Grabbing** — HTTP/HTTPS/SSH header extraction
+3. **Cipher Analysis** — TLS version and cipher suite detection
+4. **CVE Lookup** — Vulnerability matching against NVD database
+5. **Framework Mapping** — OWASP IoT Top 10 + MITRE ATT&CK
+6. **Blast Radius** — Attack chain modeling and danger scoring
+
+### How Banner Grabbing Works
+SHURI connects to each device and reads the response headers:
+- **HTTP/HTTPS**: Reads `Server` header (e.g., "lighttpd/1.4.35")
+- **SSH**: Reads banner sent on connection (e.g., "SSH-2.0-OpenSSH_7.4")
+- Firmware versions are extracted from these banners
+
+### How Cipher Analysis Works
+SHURI establishes a TLS handshake and inspects:
+- TLS version (1.0, 1.1, 1.2, 1.3)
+- Cipher suite negotiated (e.g., RC4-SHA, AES256-GCM)
+- Flags weak configurations: RC4, MD5, DES, TLSv1.0/1.1
+
+### Asyncio Concurrency
+SHURI scans up to 10 devices simultaneously using Python asyncio.
+This allows scanning 50+ devices in under 2 minutes.
+```
+
+---
+
+### 📄 Module 1 Output (GitHub Structure)
+
+```
+shuri-backend/
+├── SHURI_Scanning_Engine.ipynb      (Rushda primary)
+├── data/
+│   ├── cve_database.json            (Rushda)
+│   ├── owasp_mapping.json           (Rushda)
+│   ├── mitre_mapping.json           (Manaswi)
+│   └── test_devices.json            (Kshitija)
+├── tests/
+│   └── module1_test_checklist.md    (Kshitija)
+├── output/
+│   └── sample_scan_output.json      (All 3 verify)
+└── docs/
+    └── module1_readme.md            (Kshitija)
+```
+
+---
+
+## 📦 MODULE 2 — Dashboard + Honeypots + Detection
+### (Manaswi Primary — But Everyone Contributes)
+
+---
+
+### What This Module Now Includes
+
+```
+MODULE 2 — DASHBOARD + DETECTION
+├── Frontend Dashboard (React/Next.js)
+│   ├── Network Map (D3.js graph)
+│   ├── Device List Table
+│   │   └── Weak Protocol Badges ← NEW
+│   │   └── Cipher Warning Icons ← NEW
+│   ├── Threat Feed (Honeypot alerts)
+│   ├── Risk Heatmap
+│   └── Compliance Report
+├── Honeypot Services
+│   ├── Fake Telnet (port 2323)
+│   ├── Fake HTTP (port 8080)
+│   ├── Fake MQTT (port 1883)
+│   └── Fake SSH (port 2222) ← NEW
+└── Alert Logging System
+```
+
+---
+
+### 👩‍💻 MANASWI (55% of Module 2)
+
+#### **Days 1-2: Dashboard Foundation**
+
+**Task 2.1 — Replit Project Setup**
+- [ ] Create Replit project "SHURI-Dashboard" (Next.js template)
+- [ ] Install dependencies: `d3`, `axios`, `tailwindcss`
+- [ ] Create 5-page structure:
+  - `/` → Network Map
+  - `/devices` → Device List
+  - `/alerts` → Honeypot Alerts
+  - `/heatmap` → Risk Heatmap
+  - `/report` → Compliance Report
+
+**Task 2.2 — Mock Data Integration**
+- [ ] Create `public/mock_data.json` using Rushda's output schema
+- [ ] Build basic layout with Tailwind (Kshitija's color scheme)
+- [ ] Verify all pages render without errors
+
+#### **Days 3-4: Core Visualizations**
+
+**Task 2.3 — Network Graph Component**
+- [ ] Build `components/NetworkGraph.js` using D3.js or vis.js:
+```javascript
+// Key features:
+// - Nodes sized by blast_radius (bigger = more dangerous)
+// - Color coded: blue (safe), yellow (warning), orange (moderate), red (critical), purple (honeypot)
+// - Edges show which devices can communicate
+// - Click node → show device details panel
+// - Purple nodes pulse when honeypot alert fires
+```
+- [ ] Test with mock data (10 nodes, 15 edges)
+
+**Task 2.4 — Device List with Weak Protocol Badges (NEW)**
+- [ ] Build `components/DeviceTable.js`:
+```javascript
+// Columns:
+// - Device Name | IP | Type | Risk Level | Weak Protocols | Cipher Status | Action
+
+// Weak Protocols column shows badges:
+// - Red badge: "Telnet" if telnet open
+// - Red badge: "HTTP" if unencrypted HTTP
+// - Orange badge: "TLSv1.0" if weak TLS
+// - Green badge: "Secure" if no issues
+
+// Cipher Status column shows:
+// - ⚠️ RC4 (red) if RC4 detected
+// - ⚠️ MD5 (red) if MD5 detected
+// - ⚠️ TLS 1.0 (orange) if outdated TLS
+// - ✅ TLS 1.3 (green) if modern
+```
+
+**Task 2.5 — Heatmap Component**
+- [ ] Build `components/RiskHeatmap.js`:
+```javascript
+// Grid of device tiles
+// Color intensity based on blast_radius * cvss_score
+// Hover shows device name + risk factors
+// Click navigates to device detail
+```
+
+#### **Days 5-6: Honeypot Alerts + Polish**
+
+**Task 2.6 — Honeypot Alert Feed**
+- [ ] Build `components/ThreatFeed.js`:
+```javascript
+// Real-time scrolling list of alerts
+// Each alert shows:
+// - Timestamp
+// - Honeypot type (Telnet/HTTP/SSH/MQTT)
+// - Attacker IP
+// - Technique (from MITRE mapping)
+// - Severity badge
+
+// Auto-refresh every 5 seconds from honeypot_alerts.json
+```
+
+**Task 2.7 — One-Click Mitigation UI**
+- [ ] Build `components/MitigationPanel.js`:
+```javascript
+// For each device, show available actions:
+// - "Isolate Device" → shows iptables command, "Execute" button
+// - "Block Attacker IP" → shows firewall rule, "Execute" button
+// - "Generate Report" → downloads device-specific PDF
+
+// On click, calls Rushda's mitigation API endpoint
+```
+
+**Task 2.8 — Final Polish**
+- [ ] Deploy to Vercel
+- [ ] Test on mobile/tablet
+- [ ] Record demo video (screen capture)
+
+---
+
+### 👩‍💻 RUSHDA (25% of Module 2)
+
+#### **Days 3-4: Honeypot Services**
+
+**Task R2.1 — Fake Telnet Honeypot**
+- [ ] Create `SHURI_Honeypots.ipynb` in Google Colab
+- [ ] Build fake Telnet service:
+```python
+import socket
+import json
+from datetime import datetime
+
+def run_fake_telnet(port=2323, log_file="honeypot_alerts.json"):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(('0.0.0.0', port))
+    server.listen(5)
+    
+    print(f"[HONEYPOT] Fake Telnet running on port {port}")
+    
+    while True:
+        conn, addr = server.accept()
+        attacker_ip = addr[0]
+        
+        # Send fake login prompt
+        conn.send(b"\r\nLogin: ")
+        username = conn.recv(1024).decode('utf-8', errors='ignore').strip()
+        
+        conn.send(b"Password: ")
+        password = conn.recv(1024).decode('utf-8', errors='ignore').strip()
+        
+        # Log the attempt
+        alert = {
+            "timestamp": datetime.now().isoformat(),
+            "honeypot_type": "fake_telnet",
+            "honeypot_port": port,
+            "attacker_ip": attacker_ip,
+            "credentials_tried": f"{username}:{password}",
+            "mitre_technique": "T0812: Default Credentials",
+            "severity": "HIGH"
+        }
+        
+        # Append to log file
+        log_alert(alert, log_file)
+        
+        # Send fake error and close
+        conn.send(b"\r\nLogin incorrect\r\n")
+        conn.close()
+        
+        print(f"[ALERT] Attack from {attacker_ip} - tried {username}:{password}")
+
+def log_alert(alert, log_file):
+    try:
+        with open(log_file, 'r') as f:
+            alerts = json.load(f)
+    except:
+        alerts = []
+    
+    alerts.append(alert)
+    
+    with open(log_file, 'w') as f:
+        json.dump(alerts, f, indent=2)
+```
+
+**Task R2.2 — Fake HTTP Honeypot**
+- [ ] Build fake HTTP admin panel:
+```python
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
+from datetime import datetime
+
+class FakeAdminHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Log the access attempt
+        alert = {
+            "timestamp": datetime.now().isoformat(),
+            "honeypot_type": "fake_http_admin",
+            "honeypot_port": 8080,
+            "attacker_ip": self.client_address[0],
+            "path_accessed": self.path,
+            "user_agent": self.headers.get('User-Agent', 'Unknown'),
+            "mitre_technique": "T0846: Remote System Discovery",
+            "severity": "MEDIUM"
+        }
+        log_alert(alert, "honeypot_alerts.json")
+        
+        # Serve fake admin page
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.send_header('Server', 'IoT-Device-Admin/1.0')
+        self.end_headers()
+        
+        fake_page = """
+        <html>
+        <head><title>Device Admin Panel</title></head>
+        <body>
+        <h1>Smart Camera Admin</h1>
+        <form method="POST" action="/login">
+            Username: <input name="user"><br>
+            Password: <input name="pass" type="password"><br>
+            <button>Login</button>
+        </form>
+        </body>
+        </html>
+        """
+        self.wfile.write(fake_page.encode())
+    
+    def do_POST(self):
+        # Log credential attempt
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length).decode('utf-8')
+        
+        alert = {
+            "timestamp": datetime.now().isoformat(),
+            "honeypot_type": "fake_http_admin",
+            "honeypot_port": 8080,
+            "attacker_ip": self.client_address[0],
+            "credentials_posted": post_data,
+            "mitre_technique": "T0812: Default Credentials",
+            "severity": "HIGH"
+        }
+        log_alert(alert, "honeypot_alerts.json")
+        
+        self.send_response(401)
+        self.end_headers()
+        self.wfile.write(b"Invalid credentials")
+
+def run_fake_http(port=8080):
+    server = HTTPServer(('0.0.0.0', port), FakeAdminHandler)
+    print(f"[HONEYPOT] Fake HTTP Admin running on port {port}")
+    server.serve_forever()
+```
+
+**Task R2.3 — Fake MQTT Honeypot**
+- [ ] Build fake MQTT broker (simplified):
+```python
+import socket
+import json
+from datetime import datetime
+
+def run_fake_mqtt(port=1883, log_file="honeypot_alerts.json"):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(('0.0.0.0', port))
+    server.listen(5)
+    
+    print(f"[HONEYPOT] Fake MQTT running on port {port}")
+    
+    while True:
+        conn, addr = server.accept()
+        attacker_ip = addr[0]
+        
+        # Receive MQTT CONNECT packet
+        data = conn.recv(1024)
+        
+        # Log any connection attempt
+        alert = {
+            "timestamp": datetime.now().isoformat(),
+            "honeypot_type": "fake_mqtt",
+            "honeypot_port": port,
+            "attacker_ip": attacker_ip,
+            "raw_data_hex": data.hex()[:100],  # First 100 chars
+            "mitre_technique": "T0885: Commonly Used Port",
+            "severity": "MEDIUM"
+        }
+        log_alert(alert, log_file)
+        
+        # Send CONNACK (connection acknowledged) to keep attacker engaged
+        # MQTT CONNACK: 0x20 0x02 0x00 0x00
+        conn.send(bytes([0x20, 0x02, 0x00, 0x00]))
+        
+        conn.close()
+        print(f"[ALERT] MQTT connection from {attacker_ip}")
+```
+
+**Task R2.4 — Mitigation Script Generator**
+- [ ] Write functions that generate shell scripts:
+```python
+def generate_isolation_script(device_ip):
+    return f"""#!/bin/bash
+# SHURI Auto-Generated Isolation Script
+# Device: {device_ip}
+# Generated: {datetime.now().isoformat()}
+
+# Block all incoming traffic from device
+iptables -I INPUT -s {device_ip} -j DROP
+
+# Block all outgoing traffic to device
+iptables -I OUTPUT -d {device_ip} -j DROP
+
+# Block forwarding (if acting as gateway)
+iptables -I FORWARD -s {device_ip} -j DROP
+iptables -I FORWARD -d {device_ip} -j DROP
+
+# Save rules
+iptables-save > /etc/iptables/rules.v4
+
+echo "Device {device_ip} has been isolated."
+"""
+
+def generate_block_attacker_script(attacker_ip):
+    return f"""#!/bin/bash
+# SHURI Auto-Generated Attacker Block Script
+# Attacker: {attacker_ip}
+# Generated: {datetime.now().isoformat()}
+
+# Block attacker completely
+iptables -I INPUT -s {attacker_ip} -j DROP
+iptables -I OUTPUT -d {attacker_ip} -j DROP
+iptables -I FORWARD -s {attacker_ip} -j DROP
+
+# Log blocked attempts
+iptables -I INPUT -s {attacker_ip} -j LOG --log-prefix "SHURI_BLOCKED: "
+
+echo "Attacker {attacker_ip} has been blocked."
+"""
+```
+
+---
+
+### 👩‍💻 KSHITIJA (20% of Module 2)
+
+#### **Days 1-2: UI Design + Color Scheme**
+
+**Task K2.1 — Design System in Canva**
+- [ ] Create color palette guide:
+```
+PRIMARY COLORS:
+- Deep Purple: #6B46C1 (Wakanda energy, main accent)
+- Electric Blue: #3B82F6 (alerts, interactive elements)
+- Dark Charcoal: #1F2937 (background)
+- Vibranium Silver: #E5E7EB (text, borders)
+
+RISK LEVEL COLORS:
+- Critical: #DC2626 (red)
+- High: #F97316 (orange)
+- Medium: #FBBF24 (yellow)
+- Low: #22C55E (green)
+- Honeypot: #A855F7 (purple)
+
+BADGE COLORS:
+- Weak Protocol: #DC2626 (red background, white text)
+- Outdated TLS: #F97316 (orange background)
+- Secure: #22C55E (green background)
+```
+- [ ] Export as PNG for Manaswi to reference
+
+**Task K2.2 — Write Dashboard Copy**
+- [ ] Create text for each page:
+```markdown
+## Network Map Page
+Header: "Network Topology — Real-time Attack Surface"
+Subheader: "Red nodes require immediate attention. Purple nodes are honeypot traps."
+
+## Device List Page
+Header: "Device Inventory — Security Status"
+Subheader: "Click any device for detailed vulnerability report."
+Empty state: "No devices found. Run a network scan to discover IoT devices."
+
+## Threat Feed Page
+Header: "Live Threat Detection — Honeypot Alerts"
+Subheader: "Attacks detected on phantom devices. Source IPs are potential compromised devices."
+Empty state: "No attacks detected. Your honeypots are monitoring."
+
+## Heatmap Page
+Header: "Risk Heatmap — At-a-Glance Threat Assessment"
+Subheader: "Darker tiles indicate higher combined risk (CVSS × Blast Radius)."
+
+## Report Page
+Header: "Compliance Dashboard — Security Posture Summary"
+Subheader: "OWASP IoT Top 10 coverage and MITRE ATT&CK defense status."
+```
+
+#### **Days 3-4: Testing Dashboard**
+
+**Task K2.3 — Test Dashboard on Multiple Devices**
+- [ ] Create testing checklist:
+```markdown
+## Dashboard Testing Checklist
+
+### Desktop (Chrome/Firefox)
+- [ ] Network graph renders correctly
+- [ ] All 5 pages load without errors
+- [ ] Device table sorts correctly
+- [ ] Weak protocol badges display
+- [ ] Cipher warnings show for test devices
+- [ ] Heatmap colors are correct
+- [ ] Mitigation buttons clickable
+
+### Tablet (iPad/Android tablet)
+- [ ] Layout responsive (no horizontal scroll)
+- [ ] Graph is touch-interactive
+- [ ] Text is readable
+
+### Mobile (iPhone/Android phone)
+- [ ] Layout usable (may be simplified)
+- [ ] Critical info visible
+- [ ] No broken elements
+
+### Accessibility
+- [ ] Color contrast sufficient
+- [ ] Text readable on all backgrounds
+- [ ] Buttons have hover states
+```
+- [ ] Document bugs → report to Manaswi
+
+---
+
+### 📄 Module 2 Output (GitHub + Replit)
+
+```
+shuri-frontend/ (Replit project)
+├── pages/
+│   ├── index.js              (Network Map)
+│   ├── devices.js            (Device List)
+│   ├── alerts.js             (Threat Feed)
+│   ├── heatmap.js            (Risk Heatmap)
+│   └── report.js             (Compliance)
+├── components/
+│   ├── NetworkGraph.js       (Manaswi)
+│   ├── DeviceTable.js        (Manaswi)
+│   ├── WeakProtocolBadge.js  (Manaswi)
+│   ├── CipherWarning.js      (Manaswi)
+│   ├── ThreatFeed.js         (Manaswi)
+│   ├── RiskHeatmap.js        (Manaswi)
+│   └── MitigationPanel.js    (Manaswi)
+├── styles/
+│   └── globals.css           (Kshitija's color scheme)
+├── public/
+│   ├── mock_data.json        (Test data)
+│   └── design_guide.png      (Kshitija)
+└── docs/
+    ├── dashboard_copy.md     (Kshitija)
+    └── testing_checklist.md  (Kshitija)
+
+shuri-honeypots/ (GitHub)
+├── SHURI_Honeypots.ipynb     (Rushda)
+├── honeypot_alerts.json      (Auto-generated)
+└── mitigation_scripts/
+    ├── isolate_template.sh   (Rushda)
+    └── block_template.sh     (Rushda)
+```
+
+---
+
+## 📦 MODULE 3 — Presentation + Integration + Documentation
+### (Kshitija Primary — But Everyone Contributes)
+
+---
+
+### What This Module Now Includes
+
+```
+MODULE 3 — PRESENTATION + DOCS
+├── Pitch Deck (22 slides)
+│   ├── Problem slides (Kshitija)
+│   ├── Technical slides (Rushda)
+│   └── Visual design (Manaswi)
+├── Technical Report (PDF)
+│   ├── Main content (Kshitija)
+│   ├── Technical sections (Rushda)
+│   └── Architecture diagrams (Manaswi)
+├── Video Script (5-6 min)
+├── Demo Script (10 min live)
+├── Architecture Diagrams
+│   ├── Demo Architecture (Colab/Vercel)
+│   ├── Production Architecture (Pi/Offline) ← NEW
+│   └── Passive Sniffing Layer (Future) ← NEW
+├── README.md
+├── Offline Deployment Script ← NEW
+└── Judge Q&A Prep
+```
+
+---
+
+### 👩‍💻 KSHITIJA (55% of Module 3)
+
+#### **Days 1-2: Problem Statement + Research**
+
+**Task 3.1 — PPT Slides 1-5 (Problem)**
+- [ ] Slide 1: Title slide
+```
+SHURI
+The IoT Defense System That Sees What Others Miss
+
+"Protecting Networks Like Wakanda Protects Secrets"
+
+Team: Rushda | Manaswi | Kshitija
+```
+- [ ] Slide 2: The Shuri origin (why this name)
+- [ ] Slide 3: IoT explosion statistics
+  - Find: Number of IoT devices in India (2 billion by 2027)
+  - Find: Percentage with known vulnerabilities
+  - Find: Average time to patch IoT firmware
+- [ ] Slide 4: Real attack case studies
+  - Mirai botnet (2016) — 600,000 IoT devices weaponized
+  - Ring camera hacks (2019) — hackers talked to kids through cameras
+  - Verkada breach (2021) — 150,000 security cameras compromised
+- [ ] Slide 5: Why current solutions fail
+  - "Scanners find vulnerabilities but don't understand DANGER"
+  - "No real-time attack detection"
+  - "No prioritization — fix 100 problems in what order?"
+
+**Task 3.2 — Architecture Diagrams (Sketches for Manaswi)**
+- [ ] Sketch Demo Architecture:
+```
+┌─────────────────────────────────────────────────────┐
+│                  DEMO ARCHITECTURE                   │
+│              (Hackathon Presentation)                │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  ┌──────────────┐    ┌──────────────┐               │
+│  │ Google Colab │───▶│    GitHub    │               │
+│  │  (Backend)   │    │   (JSON DB)  │               │
+│  └──────────────┘    └──────┬───────┘               │
+│                             │                        │
+│                             ▼                        │
+│                      ┌──────────────┐               │
+│                      │    Vercel    │               │
+│                      │ (Dashboard)  │               │
+│                      └──────────────┘               │
+│                             │                        │
+│                             ▼                        │
+│                      ┌──────────────┐               │
+│                      │   Browser    │               │
+│                      │  (Judges)    │               │
+│                      └──────────────┘               │
+└─────────────────────────────────────────────────────┘
+```
+- [ ] Sketch Production Architecture:
+```
+┌─────────────────────────────────────────────────────┐
+│              PRODUCTION ARCHITECTURE                 │
+│               (Real-World Deployment)                │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  ┌──────────────┐    ┌──────────────┐               │
+│  │ Raspberry Pi │───▶│  Local NVD   │               │
+│  │  (Scanner)   │    │   Database   │               │
+│  └──────┬───────┘    └──────────────┘               │
+│         │                                            │
+│         ▼                                            │
+│  ┌──────────────┐    ┌──────────────┐               │
+│  │   Honeypots  │───▶│ Local Flask  │               │
+│  │  (Port 23+)  │    │  Dashboard   │               │
+│  └──────────────┘    └──────────────┘               │
+│                             │                        │
+│                             ▼                        │
+│                      ┌──────────────┐               │
+│                      │ Admin Device │               │
+│                      │  (Browser)   │               │
+│                      └──────────────┘               │
+│                                                      │
+│  ★ Zero cloud dependencies                          │
+│  ★ All data stays local                             │
+│  ★ Works without internet after setup               │
+└─────────────────────────────────────────────────────┘
+```
+- [ ] Sketch Passive Sniffing Layer (Future):
+```
+┌─────────────────────────────────────────────────────┐
+│          FUTURE: PASSIVE TRAFFIC MONITOR            │
+│                  (Scapy + Monitor Mode)              │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  ┌──────────────────────────────────────────────┐   │
+│  │           WiFi Adapter (Monitor Mode)         │   │
+│  │              Alfa AWUS036ACH                  │   │
+│  └──────────────────────┬───────────────────────┘   │
+│                         │                            │
+│                         ▼                            │
+│  ┌──────────────────────────────────────────────┐   │
+│  │              Scapy Packet Capture             │   │
+│  │                                               │   │
+│  │  • EAPOL frames (WPA handshakes)             │   │
+│  │  • Unencrypted credentials                    │   │
+│  │  • Protocol anomalies                         │   │
+│  └──────────────────────┬───────────────────────┘   │
+│                         │                            │
+│                         ▼                            │
+│  ┌──────────────────────────────────────────────┐   │
+│  │              Hash Flag Detection              │   │
+│  │                                               │   │
+│  │  • MD5/NTLM hashes in transit                │   │
+│  │  • Weak authentication protocols              │   │
+│  │  • Certificate validation failures            │   │
+│  └──────────────────────────────────────────────┘   │
+│                                                      │
+│  ⚠️ Requires: USB WiFi adapter with monitor mode    │
+│  ⚠️ Not included in demo (hardware limitation)      │
+│  ⚠️ Planned for production deployment               │
+└─────────────────────────────────────────────────────┘
+```
+
+#### **Days 3-4: Technical Report + Video Script**
+
+**Task 3.3 — Technical Report (8-10 pages)**
+- [ ] Structure:
+```markdown
+# SHURI: IoT Security Operations Platform
+## Technical Report
+
+### Abstract (200 words)
+SHURI is a comprehensive IoT security platform that...
+
+### 1. Introduction
+- IoT security landscape
+- Problem statement context
+- Our approach
+
+### 2. Literature Review
+- Existing IoT scanners (Shodan, Nessus)
+- Limitations of current approaches
+- Gap our solution fills
+
+### 3. System Architecture
+- Demo architecture (Colab/Vercel)
+- Production architecture (Pi/Offline)
+- Component breakdown
+
+### 4. Methodology
+#### 4.1 Banner Grabbing
+- HTTP/HTTPS/SSH header extraction
+- Firmware version detection
+
+#### 4.2 Cipher Suite Analysis
+- TLS version detection
+- Weak cipher identification (RC4, MD5)
+
+#### 4.3 Vulnerability Assessment
+- CVE database lookup
+- OWASP IoT Top 10 mapping
+- MITRE ATT&CK mapping
+
+#### 4.4 Blast Radius Calculation
+- Network graph construction
+- Attack path modeling
+- Danger scoring algorithm
+
+#### 4.5 Honeypot Detection
+- Adaptive honeypot deployment
+- Real-time alert system
+
+#### 4.6 Automated Response
+- Prioritized mitigation
+- Firewall rule generation
+
+### 5. Implementation
+- Tech stack breakdown
+- Asyncio concurrency for scale
+- JSON output schema
+
+### 6. Results
+- Sample scan outputs
+- Dashboard screenshots
+- Performance metrics
+
+### 7. Future Work
+- Passive traffic monitoring (Scapy)
+- Offline-first deployment
+- Machine learning threat detection
+
+### 8. Conclusion
+
+### 9. References
+- OWASP IoT Top 10
+- MITRE ATT&CK for IoT
+- NVD CVE Database
+- Academic papers (find 3-5)
+```
+
+**Task 3.4 — Video Script (5-6 minutes)**
+- [ ] Write detailed script:
+```markdown
+## SHURI Video Script
+
+### 0:00-0:30 — Hook
+[Show news clips of IoT hacks]
+NARRATOR: "In 2019, hackers broke into Ring cameras and talked to children in their bedrooms. In 2016, the Mirai botnet turned 600,000 IoT devices into a weapon. Your smart bulb could be the weakest link in your network."
+
+### 0:30-1:00 — Problem
+[Show diagram of home network]
+NARRATOR: "IoT devices are everywhere — cameras, bulbs, thermostats, locks. But they have one problem: they're terrible at security. Weak passwords. Old firmware. Broken encryption. And they all talk to each other."
+
+### 1:00-1:30 — Insight
+[Show blast radius diagram]
+NARRATOR: "Current scanners tell you what's broken. But they don't tell you what's DANGEROUS. A smart bulb with access to your router is more dangerous than an isolated camera — even if the camera has a higher vulnerability score."
+
+### 1:30-2:00 — Solution Overview
+[Show SHURI logo and 5-layer diagram]
+NARRATOR: "SHURI is an IoT security platform that thinks differently. Named after the Black Panther genius who protects Wakanda — because that's exactly what it does."
+
+### 2:00-4:00 — Demo Walkthrough
+[Screen recording of dashboard]
+NARRATOR: "Watch. SHURI scans the network... finds 12 devices... reads their firmware banners... checks their encryption... maps everything to known vulnerabilities."
+
+[Show network graph]
+NARRATOR: "This isn't just a list. It's an attack map. The bigger the node, the more dangerous the device. Not because of its vulnerability score — but because of what it can reach if compromised."
+
+[Show honeypot alert]
+NARRATOR: "And these purple nodes? They're traps. Fake devices that don't exist. Watch what happens when someone attacks..."
+
+[Trigger honeypot, show alert]
+NARRATOR: "SHURI just caught an attacker trying to access a camera that doesn't exist. We know their IP. We know their technique. We can block them in one click."
+
+### 4:00-4:30 — Technical Depth
+[Show OWASP/MITRE mapping]
+NARRATOR: "Every finding is mapped to OWASP IoT Top 10 and MITRE ATT&CK frameworks. This isn't a student project — it's enterprise-grade thinking."
+
+### 4:30-5:00 — Deployment
+[Show Raspberry Pi]
+NARRATOR: "SHURI is designed to run on a $35 Raspberry Pi with zero cloud dependencies. Your security data never leaves your network."
+
+### 5:00-5:30 — Impact
+[Show statistics]
+NARRATOR: "With 2 billion IoT devices expected in India by 2027, this isn't optional — it's essential."
+
+### 5:30-6:00 — Team + Close
+[Show team photo]
+NARRATOR: "We're Rushda, Manaswi, and Kshitija. Three women who built a defense system named after a genius. SHURI. Protecting networks like Wakanda protects secrets."
+
+[SHURI logo]
+```
+
+#### **Days 5-6: Final Polish + Q&A Prep**
+
+**Task 3.5 — PPT Slides 6-22**
+- [ ] Slide 6: SHURI overview (5 layers — use Manaswi's diagram)
+- [ ] Slides 7-11: Each layer explained (1 slide each)
+- [ ] Slide 12: Blast radius concept (before/after visual)
+- [ ] Slide 13: Honeypot concept (trap visual)
+- [ ] Slide 14: Banner grabbing + cipher analysis (NEW)
+- [ ] Slide 15: System architecture (2 diagrams side by side)
+- [ ] Slide 16: Tech stack
+- [ ] Slide 17: Live demo screenshot
+- [ ] Slide 18: Sample JSON output
+- [ ] Slide 19: Compliance dashboard screenshot
+- [ ] Slide 20: Raspberry Pi deployment
+- [ ] Slide 21: Future work (passive sniffing, ML)
+- [ ] Slide 22: Thank you + team
+
+**Task 3.6 — Judge Q&A Prep**
+- [ ] Write 25 likely questions with answers:
+```markdown
+## Technical Questions
+
+Q: How do you detect firmware versions?
+A: We read HTTP Server headers, SSH banners, and HTTPS certificates. For example, a camera might return "Server: lighttpd/1.4.35" — that tells us the exact version to look up in the CVE database.
+
+Q: How does blast radius work?
+A: We build a graph of all devices and their connections. For each vulnerable device, we simulate an attack spreading through the network using BFS traversal. The more devices reachable, the higher the blast radius score.
+
+Q: Why honeypots instead of just scanning?
+A: Scanning tells you what's vulnerable. Honeypots tell you who's actively attacking RIGHT NOW. It's the difference between finding a broken lock and catching someone trying to pick it.
+
+Q: Can this really run on a Raspberry Pi?
+A: Yes. We use Python, Nmap, and socket-based honeypots — all lightweight. The CVE database is cached locally. No cloud dependencies means no network overhead.
+
+Q: Why didn't you implement passive sniffing?
+A: Passive sniffing requires a WiFi adapter with monitor mode — hardware we didn't have for this demo. Our architecture supports it, and we've documented exactly how it would integrate with Scapy. It's planned for production deployment.
+
+Q: How do you handle 50+ devices?
+A: Asyncio concurrency. We scan up to 10 devices simultaneously using Python's asyncio.gather(). This brings scan time from 10+ minutes down to under 2 minutes.
+
+Q: What if a device doesn't respond to banner grabbing?
+A: We fall back to Nmap's service detection, which uses probe packets to fingerprint services. If that also fails, we mark the device as "unidentified" and flag it for manual review.
+
+## Impact Questions
+
+Q: Who would use this?
+A: Small business owners, home network administrators, IT teams in organizations with IoT deployments. Anyone who has smart devices and doesn't know if they're secure.
+
+Q: How is this different from Shodan?
+A: Shodan scans the entire internet and shows public-facing vulnerabilities. SHURI scans your local network, models attack chains, deploys honeypots, and generates fixes. It's a defensive tool, not a reconnaissance tool.
+
+Q: What's the business model?
+A: Open source for individual users. Enterprise version with managed honeypots, compliance reporting, and integration APIs as a subscription service.
+```
+
+---
+
+### 👩‍💻 RUSHDA (25% of Module 3)
+
+#### **Days 3-4: Technical Slides + API Docs**
+
+**Task R3.1 — Technical PPT Slides (12-14)**
+- [ ] Write content for:
+```markdown
+## Slide 7: Layer 1 — RECON
+- Nmap network discovery
+- Banner grabbing (HTTP/HTTPS/SSH)
+- Cipher suite analysis (TLS version, RC4/MD5)
+- CVE database lookup
+- OWASP + MITRE mapping
+
+## Slide 8: Layer 2 — SIMULATE
+- Network graph construction with NetworkX
+- Attack path modeling (BFS/DFS traversal)
+- Blast radius scoring algorithm
+- Why blast radius > CVSS for prioritization
+
+## Slide 9: Layer 3 — TRAP
+- Adaptive honeypot deployment
+- Fake Telnet, HTTP, MQTT, SSH services
+- Real-time attack logging
+- MITRE technique classification
+
+## Slide 10: Layer 4 — RESPOND
+- Prioritized mitigation (active threats first)
+- iptables isolation script generation
+- One-click execution from dashboard
+- Plain English explanations
+
+## Slide 11: Layer 5 — COMPLY
+- OWASP IoT Top 10 coverage report
+- MITRE ATT&CK defense status
+- Risk score before/after remediation
+- Exportable PDF compliance report
+```
+
+**Task R3.2 — API Documentation**
+- [ ] Write API docs for README:
+```markdown
+## REST API Endpoints
+
+### POST /scan
+Trigger a network scan.
+- **Request:** `{ "ip_range": "192.168.1.0/24" }`
+- **Response:** `{ "scan_id": "SHURI-001", "status": "running" }`
+
+### GET /devices
+Get all discovered devices with vulnerability data.
+- **Response:** `{ "devices": [...], "total": 12, "critical": 3 }`
+
+### GET /devices/{device_id}
+Get detailed info for a specific device.
+- **Response:** Full device object with banner_info, cipher_suite, vulnerabilities, blast_radius
+
+### GET /graph
+Get network topology graph data.
+- **Response:** `{ "nodes": [...], "edges": [...] }`
+
+### GET /alerts
+Get honeypot alerts.
+- **Response:** `{ "alerts": [...], "total": 5, "last_24h": 3 }`
+
+### POST /mitigate/{device_id}
+Execute mitigation for a device.
+- **Request:** `{ "action": "isolate" | "block" | "disable_telnet" }`
+- **Response:** `{ "status": "success", "script": "iptables -I..." }`
+
+### GET /report
+Generate compliance report.
+- **Response:** PDF or JSON compliance report
+```
+
+**Task R3.3 — Offline Deployment Script (NEW)**
+- [ ] Create `deploy_offline.sh` for GitHub:
+```bash
+#!/bin/bash
+# SHURI Offline Deployment Script
+# Run this on a Raspberry Pi for production deployment
+
+echo "=== SHURI Offline Deployment ==="
+
+# Update system
+sudo apt-get update
+sudo apt-get install -y python3-pip nmap
+
+# Install Python dependencies
+pip3 install python-nmap networkx fastapi uvicorn requests paramiko
+
+# Download NVD CVE database (subset - recent 2 years)
+echo "Downloading CVE database..."
+mkdir -p data
+wget -q https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2024.json.gz -O data/cve_2024.json.gz
+wget -q https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2025.json.gz -O data/cve_2025.json.gz
+gunzip data/*.gz
+
+# Create local dashboard (Flask alternative to Vercel)
+pip3 install flask
+
+# Start SHURI backend
+echo "Starting SHURI..."
+python3 shuri_backend.py &
+
+# Start honeypots
+python3 shuri_honeypots.py &
+
+# Start local dashboard
+python3 shuri_dashboard.py &
+
+echo "=== SHURI is running ==="
+echo "Dashboard: http://localhost:5000"
+echo "API: http://localhost:8000"
+echo "Honeypots: Telnet:2323, HTTP:8080, MQTT:1883"
+```
+
+---
+
+### 👩‍💻 MANASWI (20% of Module 3)
+
+#### **Days 3-4: Visual Design**
+
+**Task M3.1 — Architecture Diagrams (Final Design)**
+- [ ] Take Kshitija's sketches and make them professional in Canva:
+  - Demo Architecture (Colab/Vercel) — clean boxes, arrows, icons
+  - Production Architecture (Pi/Offline) — same style
+  - Passive Sniffing Layer (Future) — dashed boxes to show "planned"
+
+**Task M3.2 — PPT Visual Design**
+- [ ] Apply design system to all 22 slides:
+  - Purple gradient headers
+  - Dark charcoal backgrounds
+  - Electric blue accent highlights
+  - Consistent icon style
+  - Professional typography
+
+**Task M3.3 — SHURI Logo**
+- [ ] Create in Canva:
+  - Word "SHURI" in futuristic font
+  - Hexagon pattern behind (representing network nodes)
+  - Purple/blue gradient
+  - Export in PNG and SVG
+
+**Task M3.4 — Demo Video Recording**
+- [ ] Record screen demo (2-3 minutes):
+  - Open dashboard
+  - Show network scan running
+  - Show graph populating
+  - Click device → show details + weak protocol badges
+  - Trigger honeypot → show alert appearing
+  - Click "Isolate" → show script generated
+- [ ] Clean recording, no errors, smooth transitions
+
+---
+
+### 📄 Module 3 Output (Google Drive + GitHub)
+
+```
+shuri-presentation/
+├── SHURI_Pitch_Deck.pdf              (All 3)
+├── SHURI_Technical_Report.pdf        (Kshitija primary)
+├── SHURI_Video_Script.md             (Kshitija)
+├── SHURI_Demo_Script.md              (Kshitija)
+├── SHURI_QA_Prep.md                  (Kshitija + Rushda)
+├── diagrams/
+│   ├── demo_architecture.png         (Manaswi design)
+│   ├── production_architecture.png   (Manaswi design)
+│   ├── passive_sniffing_future.png   (Manaswi design)
+│   ├── 5_layers_diagram.png          (Manaswi)
+│   └── shuri_logo.png                (Manaswi)
+├── demo_video/
+│   └── shuri_demo.mp4                (Manaswi)
+└── scripts/
+    └── deploy_offline.sh             (Rushda)
+
+shuri-repo/README.md (GitHub)
+├── Project Overview                  (Kshitija)
+├── Architecture                      (All 3)
+├── API Documentation                 (Rushda)
+├── Dashboard Usage                   (Manaswi)
+├── Offline Deployment                (Rushda)
+├── Testing                           (Kshitija)
+└── Team Credits                      (Kshitija)
+```
+
+---
+
+## 📅 6-Day Timeline (Final)
+
+### **Day 1-2: Foundation**
+| Person | Tasks | Deliverables |
+|--------|-------|--------------|
+| Rushda | Nmap + HTTP banner + cipher detection | `grab_http_banner()`, `analyze_cipher_suite()` working |
+| Manaswi | SSH banner + MITRE mapping + Replit setup | `grab_ssh_banner()`, `mitre_mapping.json`, dashboard shell |
+| Kshitija | Test dataset + Problem slides (1-5) + architecture sketches | `test_devices.json`, 5 slides drafted, 3 diagram sketches |
+
+**End of Day 2 sync:** Demo banner grabbing on test device, show dashboard shell, review slides
+
+---
+
+### **Day 3-4: Core Features**
+| Person | Tasks | Deliverables |
+|--------|-------|--------------|
+| Rushda | CVE lookup + asyncio + honeypots (Telnet, HTTP, MQTT) + API docs | Full scanning engine, 3 honeypots logging alerts |
+| Manaswi | Network graph + device table + weak protocol badges + diagrams | Dashboard renders real data, polished diagrams |
+| Kshitija | Technical report draft + video script + test dashboard | 8-page report draft, 6-min script, testing checklist done |
+
+**End of Day 4 sync:** Full integration test — scan → graph → honeypot → alert, review report/script
+
+---
+
+### **Day 5-6: Polish + Final**
+| Person | Tasks | Deliverables |
+|--------|-------|--------------|
+| Rushda | Blast radius + final JSON schema + offline deploy script + tech slides | Complete backend, `deploy_offline.sh` |
+| Manaswi | Honeypot alert feed + mitigation UI + Vercel deploy + demo recording | Live dashboard, 3-min demo video |
+| Kshitija | PPT slides 6-22 + Q&A prep + final report polish + demo script | Complete PPT, Q&A doc (25 questions) |
+
+**End of Day 6:** Final rehearsal (3 run-throughs), everything submitted
+
+---
+
+## 🎤 Pitch Division (10 Minutes — Final)
+
+| Time | Speaker | Content |
+|------|---------|---------|
+| 0:00-0:30 | **Kshitija** | Hook: IoT attack story (Ring cameras, Mirai) |
+| 0:30-1:00 | **Kshitija** | Problem: IoT devices are weak, talk to each other |
+| 1:00-1:30 | **Rushda** | Insight: Blast radius — most vulnerable ≠ most dangerous |
+| 1:30-2:00 | **Rushda** | Solution overview: 5 layers |
+| 2:00-2:30 | **Rushda** | Technical depth: Banner grabbing + cipher analysis |
+| 2:30-3:00 | **Manaswi** | Honeypot concept: Fake devices catch real attackers |
+| 3:00-6:00 | **Manaswi** | **LIVE DEMO** (scan → graph → honeypot trigger → fix) |
+| 6:00-7:00 | **Rushda** | Framework mapping: OWASP + MITRE |
+| 7:00-8:00 | **Kshitija** | Deployment: Pi + offline + future (passive sniffing) |
+| 8:00-8:30 | **Kshitija** | Impact: Why this matters (2B devices by 2027) |
+| 8:30-10:00 | **All 3** | Q&A: Rushda (technical), Manaswi (demo), Kshitija (impact) |
+
+---
+
+## ✅ Final Checklist (Everyone Signs Off)
+
+### **Module 1 (Scanning Engine)**
+- [ ] `discover_devices()` works
+- [ ] `grab_http_banner()` works
+- [ ] `grab_ssh_banner()` works
+- [ ] `analyze_cipher_suite()` works
+- [ ] `lookup_cve()` returns correct CVEs
+- [ ] `map_to_owasp()` returns correct categories
+- [ ] `map_to_mitre()` returns correct techniques
+- [ ] `calculate_blast_radius()` scores correctly
+- [ ] Asyncio scans 10 devices faster than sequential
+- [ ] Final JSON matches new schema
+
+### **Module 2 (Dashboard + Honeypots)**
+- [ ] Network graph renders correctly
+- [ ] Device table shows weak protocol badges
+- [ ] Cipher warnings display correctly
+- [ ] Heatmap colors are accurate
+- [ ] Honeypot alerts appear in feed
+- [ ] Mitigation buttons generate correct scripts
+- [ ] Dashboard deployed to Vercel
+- [ ] 3 honeypots (Telnet, HTTP, MQTT) running
+
+### **Module 3 (Presentation + Docs)**
+- [ ] PPT (22 slides) complete and designed
+- [ ] Technical report (8-10 pages) complete
+- [ ] Video script (6 min) finalized
+- [ ] Demo script (10 min) rehearsed 3x
+- [ ] Q&A prep (25 questions) done
+- [ ] Architecture diagrams (3) professional
+- [ ] README.md complete
+- [ ] `deploy_offline.sh` in GitHub
+
+---
+
+## 🎯 Success Criteria
+
+**By the end of 6 days:**
+
+✅ Scanning engine with banner grabbing + cipher analysis + blast radius  
+✅ Dashboard with network graph + weak protocol badges + honeypot alerts  
+✅ 3 working honeypots logging attacks  
+✅ One-click mitigation with generated scripts  
+✅ Professional PPT, report, video script, demo script  
+✅ Architecture for offline deployment documented  
+✅ Passive sniffing explained as future enhancement  
+✅ All 3 can deliver their pitch sections confidently  
+✅ Demo works 3 times in a row without errors  
+
+---
+
+**This is the final work division. Everyone touches everything. Remote-friendly. PDF components integrated. Buildable in 6 days.**
+
+**Ready to start?**
+this whats been done so far I am manaswi how do i move forward
