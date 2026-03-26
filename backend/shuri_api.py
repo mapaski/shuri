@@ -1,9 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
 import json
 import os
 import subprocess
 import sys
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -24,22 +25,38 @@ def load_json_file(path, default_value):
 @app.route("/")
 def home():
     return jsonify({
-        "message": "SHURI Flask API is running"
+        "message": "SHURI backend is running",
+        "timestamp": datetime.now().isoformat()
+    })
+
+
+@app.route("/status", methods=["GET"])
+def status():
+    return jsonify({
+        "backend": "running",
+        "scan_file_exists": os.path.exists(SCAN_FILE),
+        "alerts_file_exists": os.path.exists(ALERTS_FILE),
+        "scan_script_exists": os.path.exists(SCAN_SCRIPT),
+        "timestamp": datetime.now().isoformat()
     })
 
 
 @app.route("/devices", methods=["GET"])
 def get_devices():
-    data = load_json_file(SCAN_FILE, None)
-    if data is None:
-        return jsonify({"error": "my_network_scan.json not found"}), 404
-    return jsonify(data)
+    data = load_json_file(SCAN_FILE, [])
+    return jsonify({
+        "count": len(data),
+        "devices": data
+    })
 
 
 @app.route("/alerts", methods=["GET"])
 def get_alerts():
     data = load_json_file(ALERTS_FILE, [])
-    return jsonify(data)
+    return jsonify({
+        "count": len(data),
+        "alerts": data
+    })
 
 
 @app.route("/scan", methods=["POST"])
@@ -52,14 +69,18 @@ def run_scan():
             cwd=BASE_DIR
         )
 
+        refreshed_data = load_json_file(SCAN_FILE, [])
+
         return jsonify({
             "message": "Scan completed",
             "returncode": result.returncode,
+            "device_count": len(refreshed_data),
             "stdout": result.stdout,
             "stderr": result.stderr
         })
     except Exception as e:
         return jsonify({
+            "message": "Scan failed",
             "error": str(e)
         }), 500
 
