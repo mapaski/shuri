@@ -1,20 +1,12 @@
 import { useLocation } from "wouter";
-import {
-  Network,
-  Cpu,
-  AlertTriangle,
-  Activity,
-  FileText,
-  Shield,
-  ChevronRight,
-} from "lucide-react";
+import { Network, Cpu, AlertTriangle, Activity, ShieldCheck, Shield, ChevronRight } from "lucide-react";
 
 const navItems = [
-  { label: "Network Map", icon: Network, href: "/network-map" },
-  { label: "Device List", icon: Cpu, href: "/device-list" },
-  { label: "Alerts", icon: AlertTriangle, href: "/alerts" },
-  { label: "Heatmap", icon: Activity, href: "/heatmap" },
-  { label: "Report", icon: FileText, href: "/report" },
+  { label: "Network Map",  icon: Network,       href: "/network-map" },
+  { label: "Device List",  icon: Cpu,           href: "/device-list" },
+  { label: "Alerts",       icon: AlertTriangle, href: "/alerts" },
+  { label: "Heatmap",      icon: Activity,      href: "/heatmap" },
+  { label: "Compliance",   icon: ShieldCheck,   href: "/compliance" },
 ];
 
 export default function Sidebar() {

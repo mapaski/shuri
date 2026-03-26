@@ -7,8 +7,10 @@ import NetworkMap from "@/pages/NetworkMap";
 import DeviceList from "@/pages/DeviceList";
 import Alerts from "@/pages/Alerts";
 import Heatmap from "@/pages/Heatmap";
-import Report from "@/pages/Report";
+import Compliance from "@/pages/Compliance";
 import NotFound from "@/pages/not-found";
+import { DeviceDrawerProvider } from "@/context/device-drawer-context";
+import DeviceDrawer from "@/components/DeviceDrawer";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +23,7 @@ function Router() {
         <Route path="/device-list" component={DeviceList} />
         <Route path="/alerts" component={Alerts} />
         <Route path="/heatmap" component={Heatmap} />
-        <Route path="/report" component={Report} />
+        <Route path="/compliance" component={Compliance} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
@@ -32,9 +34,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <DeviceDrawerProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <DeviceDrawer />
+        </DeviceDrawerProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

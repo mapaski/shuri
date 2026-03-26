@@ -6,8 +6,8 @@ const pageTitles: Record<string, { title: string; sub: string }> = {
   "/network-map": { title: "Network Map", sub: "Live topology of connected IoT devices" },
   "/device-list": { title: "Device List", sub: "All registered IoT endpoints" },
   "/alerts": { title: "Alerts", sub: "Active security incidents and warnings" },
-  "/heatmap": { title: "Heatmap", sub: "Traffic and threat density over time" },
-  "/report": { title: "Report", sub: "Security posture summary and audit log" },
+  "/heatmap": { title: "Heatmap", sub: "CVSS × Blast Radius risk tile matrix + traffic analytics" },
+  "/compliance": { title: "Compliance", sub: "OWASP IoT Top 10 coverage and remediation status" },
 };
 
 export default function Header() {
