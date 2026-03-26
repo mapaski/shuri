@@ -16,6 +16,14 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## SHURI-Dashboard
+
+Cybersecurity IoT dashboard with dark theme (#1F2937 bg, #A855F7 purple accent).
+
+**Pages:** Network Map, Device List, Alerts, Heatmap, Report  
+**Stack:** React + Vite, Wouter routing, Recharts, Tailwind v4  
+**Artifact:** `artifacts/shuri-dashboard` at preview path `/`
+
 ## Structure
 
 ```text

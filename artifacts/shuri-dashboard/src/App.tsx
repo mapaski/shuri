@@ -2,40 +2,26 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppLayout } from "@/components/layout/AppLayout";
-
-// Pages
-import { Dashboard } from "@/pages/Dashboard";
-import { PlaceholderPage } from "@/pages/Placeholder";
+import AppLayout from "@/components/layout/AppLayout";
+import NetworkMap from "@/pages/NetworkMap";
+import DeviceList from "@/pages/DeviceList";
+import Alerts from "@/pages/Alerts";
+import Heatmap from "@/pages/Heatmap";
+import Report from "@/pages/Report";
 import NotFound from "@/pages/not-found";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function Router() {
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/analytics">
-          <PlaceholderPage title="Advanced Analytics" />
-        </Route>
-        <Route path="/reports">
-          <PlaceholderPage title="System Reports" />
-        </Route>
-        <Route path="/security">
-          <PlaceholderPage title="Security Matrix" />
-        </Route>
-        <Route path="/settings">
-          <PlaceholderPage title="Global Settings" />
-        </Route>
+        <Route path="/" component={NetworkMap} />
+        <Route path="/network-map" component={NetworkMap} />
+        <Route path="/device-list" component={DeviceList} />
+        <Route path="/alerts" component={Alerts} />
+        <Route path="/heatmap" component={Heatmap} />
+        <Route path="/report" component={Report} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
