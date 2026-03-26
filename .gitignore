@@ -50,3 +50,4 @@ Thumbs.db
 backend/data/honeypot_alerts.json
 backend/data/scan_output.json
 node_modules/
+frontend/.env.local
