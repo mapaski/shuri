@@ -1,50 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
-import { Shield, AlertTriangle, Cpu, CheckCircle, FileDown, Calendar, TrendingUp, TrendingDown } from "lucide-react";
-
-const weeklyAlerts = [
-  { day: "Mon", critical: 2, high: 5, medium: 8, low: 3 },
-  { day: "Tue", critical: 1, high: 3, medium: 6, low: 5 },
-  { day: "Wed", critical: 4, high: 7, medium: 4, low: 2 },
-  { day: "Thu", critical: 0, high: 2, medium: 9, low: 7 },
-  { day: "Fri", critical: 3, high: 6, medium: 11, low: 4 },
-  { day: "Sat", critical: 0, high: 1, medium: 3, low: 1 },
-  { day: "Sun", critical: 0, high: 0, medium: 2, low: 0 },
-];
-
-const threatTypes = [
-  { name: "Intrusion", value: 28, color: "#EF4444" },
-  { name: "Exfiltration", value: 19, color: "#F97316" },
-  { name: "Vulnerability", value: 22, color: "#F59E0B" },
-  { name: "Protocol", value: 16, color: "#A855F7" },
-  { name: "Config", value: 9, color: "#06B6D4" },
-  { name: "Other", value: 6, color: "#6B7280" },
-];
-
-const secScore = [
-  { metric: "Auth", value: 88 },
-  { metric: "Encryption", value: 72 },
-  { metric: "Patching", value: 55 },
-  { metric: "Monitoring", value: 92 },
-  { metric: "Access Ctrl", value: 79 },
-  { metric: "Logging", value: 84 },
-];
-
-const auditLog = [
-  { time: "09:12", action: "Firewall rule updated", user: "admin", outcome: "success" },
-  { time: "09:45", action: "Device DEV-009 quarantined", user: "system", outcome: "success" },
-  { time: "10:03", action: "Alert ALT-001 escalated", user: "analyst@shuri", outcome: "success" },
-  { time: "10:30", action: "Failed config push to DEV-007", user: "admin", outcome: "failed" },
-  { time: "11:18", action: "MQTT broker restarted", user: "system", outcome: "success" },
-  { time: "12:44", action: "Certificate renewed for DEV-004", user: "admin", outcome: "success" },
-  { time: "13:50", action: "Report generated", user: "admin", outcome: "success" },
-];
-
-const kpis = [
-  { label: "Security Score", value: "78/100", trend: "+4", up: true, icon: Shield, color: "text-primary" },
-  { label: "Devices Online", value: "8/10", trend: "-1", up: false, icon: Cpu, color: "text-emerald-400" },
-  { label: "Active Threats", value: "7", trend: "+2", up: false, icon: AlertTriangle, color: "text-red-400" },
-  { label: "Resolved Today", value: "12", trend: "+5", up: true, icon: CheckCircle, color: "text-emerald-400" },
-];
+import { Shield, AlertTriangle, Cpu, CheckCircle, FileDown, Calendar, TrendingUp, TrendingDown, Loader2, XCircle } from "lucide-react";
+import { useScanData } from "@/hooks/use-scan-data";
 
 const RADIAN = Math.PI / 180;
 const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: { cx: number; cy: number; midAngle: number; innerRadius: number; outerRadius: number; percent: number }) => {
@@ -58,15 +14,44 @@ const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: { 
   ) : null;
 };
 
+const kpiIcons = [Shield, Cpu, AlertTriangle, CheckCircle];
+const kpiColors = ["text-primary", "text-emerald-400", "text-red-400", "text-emerald-400"];
+const kpiLabels = ["Security Score", "Devices Online", "Active Threats", "Resolved Today"];
+
 export default function Report() {
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const { data, isLoading, isError } = useScanData();
+
+  if (isLoading) return (
+    <div className="h-64 flex items-center justify-center">
+      <Loader2 size={28} className="animate-spin text-primary" />
+    </div>
+  );
+  if (isError || !data) return (
+    <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+      <XCircle size={18} className="text-destructive mr-2" /> Failed to load scan data
+    </div>
+  );
+
+  const { report, scan_metadata } = data;
+  const { weekly_alerts, threat_breakdown, posture_scores, audit_log, kpis } = report;
+
+  const kpiKeys = ["security_score", "devices_online", "active_threats", "resolved_today"] as const;
+  const kpiData = kpiKeys.map((k, i) => ({ ...kpis[k], label: kpiLabels[i], Icon: kpiIcons[i], color: kpiColors[i] }));
+
+  const scanDate = new Date(scan_metadata.timestamp).toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Calendar size={13} />
-          <span>{today}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar size={13} />
+            <span>Scan: {scanDate}</span>
+          </div>
+          <span className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-0.5 rounded border border-border">{scan_metadata.scan_id}</span>
+          <span className="text-xs text-muted-foreground">{scan_metadata.scanner}</span>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/15 text-primary border border-primary/30 text-sm font-medium hover:bg-primary/25 transition-colors">
           <FileDown size={14} />
@@ -75,7 +60,7 @@ export default function Report() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {kpis.map(({ label, value, trend, up, icon: Icon, color }) => (
+        {kpiData.map(({ label, value, trend, up, Icon, color }) => (
           <div key={label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <Icon size={16} className={color} />
@@ -93,34 +78,36 @@ export default function Report() {
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 bg-card border border-border rounded-xl p-5">
           <h2 className="text-sm font-semibold text-foreground mb-1">Weekly Alert Trend</h2>
-          <p className="text-xs text-muted-foreground mb-4">Alerts by severity over the past 7 days</p>
+          <p className="text-xs text-muted-foreground mb-4">Alerts by severity — 7 days to scan date</p>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={weeklyAlerts}>
+            <LineChart data={weekly_alerts}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="day" tick={{ fill: "#6B7280", fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fill: "#6B7280", fontSize: 11 }} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={{ background: "#1F2937", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: "#E5E7EB" }} />
               <Line type="monotone" dataKey="critical" stroke="#EF4444" strokeWidth={2} dot={{ fill: "#EF4444", r: 3 }} name="Critical" />
-              <Line type="monotone" dataKey="high" stroke="#F97316" strokeWidth={2} dot={{ fill: "#F97316", r: 3 }} name="High" />
-              <Line type="monotone" dataKey="medium" stroke="#F59E0B" strokeWidth={2} dot={{ fill: "#F59E0B", r: 3 }} name="Medium" />
-              <Line type="monotone" dataKey="low" stroke="#A855F7" strokeWidth={2} dot={{ fill: "#A855F7", r: 3 }} name="Low" />
+              <Line type="monotone" dataKey="high"     stroke="#F97316" strokeWidth={2} dot={{ fill: "#F97316", r: 3 }} name="High" />
+              <Line type="monotone" dataKey="medium"   stroke="#F59E0B" strokeWidth={2} dot={{ fill: "#F59E0B", r: 3 }} name="Medium" />
+              <Line type="monotone" dataKey="low"      stroke="#A855F7" strokeWidth={2} dot={{ fill: "#A855F7", r: 3 }} name="Low" />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         <div className="bg-card border border-border rounded-xl p-5">
           <h2 className="text-sm font-semibold text-foreground mb-1">Threat Breakdown</h2>
-          <p className="text-xs text-muted-foreground mb-4">By attack type this week</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie data={threatTypes} cx="50%" cy="50%" outerRadius={70} dataKey="value" labelLine={false} label={renderLabel}>
-                {threatTypes.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: "#1F2937", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 8, fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
+          <p className="text-xs text-muted-foreground mb-4">By type from scan data</p>
+          <div style={{ width: "100%", height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={threat_breakdown} cx="50%" cy="50%" outerRadius={80} dataKey="value" labelLine={false} label={renderLabel} isAnimationActive={false}>
+                  {threat_breakdown.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                </Pie>
+                <Tooltip contentStyle={{ background: "#1F2937", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 8, fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
           <div className="grid grid-cols-2 gap-1 mt-2">
-            {threatTypes.map(t => (
+            {threat_breakdown.map(t => (
               <div key={t.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
                 {t.name}
@@ -133,9 +120,9 @@ export default function Report() {
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-xl p-5">
           <h2 className="text-sm font-semibold text-foreground mb-1">Security Posture Score</h2>
-          <p className="text-xs text-muted-foreground mb-4">Assessment across 6 control domains</p>
+          <p className="text-xs text-muted-foreground mb-4">Across 6 IoT security control domains</p>
           <ResponsiveContainer width="100%" height={220}>
-            <RadarChart data={secScore}>
+            <RadarChart data={posture_scores}>
               <PolarGrid stroke="rgba(255,255,255,0.07)" />
               <PolarAngleAxis dataKey="metric" tick={{ fill: "#9CA3AF", fontSize: 11 }} />
               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "#6B7280", fontSize: 9 }} tickCount={4} />
@@ -146,18 +133,26 @@ export default function Report() {
         </div>
 
         <div className="bg-card border border-border rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Audit Log — Today</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">Scanner Audit Log</h2>
           <div className="space-y-2">
-            {auditLog.map((entry, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
-                <span className="font-mono text-xs text-muted-foreground w-12 flex-shrink-0">{entry.time}</span>
-                <span className="text-xs text-foreground flex-1">{entry.action}</span>
-                <span className="text-xs text-muted-foreground font-mono">{entry.user}</span>
-                <span className={`text-xs font-medium ${entry.outcome === "success" ? "text-emerald-400" : "text-red-400"}`}>
-                  {entry.outcome}
-                </span>
+            {audit_log.map((entry, i) => (
+              <div key={i} className="flex items-start gap-3 py-2 border-b border-border/50 last:border-0">
+                <span className="font-mono text-xs text-muted-foreground w-12 flex-shrink-0 mt-0.5">{entry.time}</span>
+                <span className="text-xs text-foreground flex-1 leading-relaxed">{entry.action}</span>
+                <span className="text-xs text-muted-foreground font-mono flex-shrink-0">{entry.user}</span>
+                <span className={`text-xs font-medium flex-shrink-0 ${entry.outcome === "success" ? "text-emerald-400" : "text-red-400"}`}>{entry.outcome}</span>
               </div>
             ))}
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-border">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Targets scanned: <span className="text-foreground">{scan_metadata.targets.join(", ")}</span></span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+              <span>Ports checked: <span className="text-foreground font-mono">{scan_metadata.ports_scanned}</span></span>
+              <span>{scan_metadata.total_up} up / {scan_metadata.total_down} down</span>
+            </div>
           </div>
         </div>
       </div>

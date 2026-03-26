@@ -1,73 +1,72 @@
 import { useState } from "react";
-import { Search, Filter, Cpu, Camera, Thermometer, Smartphone, Router, Server, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Filter, Cpu, Camera, Thermometer, Smartphone, Router, Server, ChevronUp, ChevronDown, Loader2, XCircle, Shield, ChevronRight } from "lucide-react";
+import { useScanData, Device } from "@/hooks/use-scan-data";
 
-type Status = "online" | "warning" | "critical" | "offline";
-type DeviceType = "Camera" | "Sensor" | "Gateway" | "Mobile" | "Server" | "Router";
+const typeIcons: Record<string, typeof Cpu> = {
+  Camera: Camera, Sensor: Thermometer, Gateway: Router,
+  Mobile: Smartphone, Server: Server, Router: Router,
+};
 
-interface Device {
-  id: string;
-  name: string;
-  type: DeviceType;
-  ip: string;
-  mac: string;
-  status: Status;
-  lastSeen: string;
-  firmware: string;
-  threats: number;
-  location: string;
+const riskConfig = {
+  CRITICAL: { label: "Critical", className: "text-red-400 bg-red-400/10 border-red-400/30", dot: "status-dot-critical" },
+  HIGH:     { label: "High",     className: "text-orange-400 bg-orange-400/10 border-orange-400/30", dot: "status-dot-warning" },
+  MEDIUM:   { label: "Medium",   className: "text-amber-400 bg-amber-400/10 border-amber-400/30", dot: "status-dot-warning" },
+  LOW:      { label: "Low",      className: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30", dot: "status-dot-online" },
+};
+
+const stateConfig = {
+  up:   { label: "Online",  dot: "status-dot-online" },
+  down: { label: "Offline", dot: "status-dot-offline" },
+};
+
+function relativeTime(iso: string) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return `${Math.round(diff)}s ago`;
+  if (diff < 3600) return `${Math.round(diff / 60)}m ago`;
+  return `${Math.round(diff / 3600)}h ago`;
 }
 
-const devices: Device[] = [
-  { id: "DEV-001", name: "Cam-Lobby-01", type: "Camera", ip: "192.168.1.21", mac: "AA:BB:CC:11:22:33", status: "warning", lastSeen: "2s ago", firmware: "v2.1.4", threats: 2, location: "Building A" },
-  { id: "DEV-002", name: "Cam-Server-01", type: "Camera", ip: "192.168.1.22", mac: "AA:BB:CC:11:22:44", status: "critical", lastSeen: "5s ago", firmware: "v2.0.1", threats: 5, location: "Server Room" },
-  { id: "DEV-003", name: "Gateway-Main", type: "Gateway", ip: "192.168.1.1", mac: "AA:BB:CC:00:11:22", status: "online", lastSeen: "1s ago", firmware: "v4.3.2", threats: 0, location: "NOC" },
-  { id: "DEV-004", name: "MQTT-Broker", type: "Server", ip: "192.168.1.10", mac: "AA:BB:CC:00:22:33", status: "online", lastSeen: "1s ago", firmware: "v3.5.0", threats: 0, location: "Server Room" },
-  { id: "DEV-005", name: "Temp-A1", type: "Sensor", ip: "192.168.1.31", mac: "AA:BB:CC:33:44:55", status: "online", lastSeen: "10s ago", firmware: "v1.0.3", threats: 0, location: "Floor 1" },
-  { id: "DEV-006", name: "Temp-B2", type: "Sensor", ip: "192.168.1.32", mac: "AA:BB:CC:33:44:66", status: "online", lastSeen: "8s ago", firmware: "v1.0.3", threats: 0, location: "Floor 2" },
-  { id: "DEV-007", name: "Mobile-Admin", type: "Mobile", ip: "192.168.1.50", mac: "AA:BB:CC:55:66:77", status: "warning", lastSeen: "45s ago", firmware: "Android 14", threats: 1, location: "Mobile" },
-  { id: "DEV-008", name: "Switch-01", type: "Router", ip: "192.168.1.2", mac: "AA:BB:CC:00:33:44", status: "online", lastSeen: "1s ago", firmware: "v6.1.0", threats: 0, location: "NOC" },
-  { id: "DEV-009", name: "Cam-Exit-02", type: "Camera", ip: "192.168.1.23", mac: "AA:BB:CC:11:33:55", status: "offline", lastSeen: "5m ago", firmware: "v2.1.4", threats: 0, location: "Exit B" },
-  { id: "DEV-010", name: "Pressure-C3", type: "Sensor", ip: "192.168.1.33", mac: "AA:BB:CC:33:55:77", status: "online", lastSeen: "3s ago", firmware: "v1.2.0", threats: 0, location: "Floor 3" },
-];
-
-const typeIcons: Record<DeviceType, typeof Cpu> = {
-  Camera: Camera,
-  Sensor: Thermometer,
-  Gateway: Router,
-  Mobile: Smartphone,
-  Server: Server,
-  Router: Router,
-};
-
-const statusConfig: Record<Status, { label: string; className: string; dot: string }> = {
-  online: { label: "Online", className: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30", dot: "status-dot-online" },
-  warning: { label: "Warning", className: "text-amber-400 bg-amber-400/10 border-amber-400/30", dot: "status-dot-warning" },
-  critical: { label: "Critical", className: "text-red-400 bg-red-400/10 border-red-400/30", dot: "status-dot-critical" },
-  offline: { label: "Offline", className: "text-gray-400 bg-gray-400/10 border-gray-400/30", dot: "status-dot-offline" },
-};
-
 export default function DeviceList() {
+  const { data, isLoading, isError } = useScanData();
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<Status | "all">("all");
-  const [sortField, setSortField] = useState<keyof Device>("status");
+  const [filterRisk, setFilterRisk] = useState<string>("all");
+  const [sortField, setSortField] = useState<keyof Device>("risk_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  if (isLoading) return (
+    <div className="h-64 flex items-center justify-center">
+      <Loader2 size={28} className="animate-spin text-primary" />
+    </div>
+  );
+  if (isError || !data) return (
+    <div className="h-64 flex items-center justify-center">
+      <XCircle size={24} className="text-destructive mr-2" />
+      <span className="text-sm text-muted-foreground">Failed to load scan data</span>
+    </div>
+  );
+
+  const { devices } = data;
 
   const filtered = devices
     .filter(d => {
-      const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) ||
+      const ms = d.hostname.toLowerCase().includes(search.toLowerCase()) ||
         d.ip.includes(search) || d.id.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = filterStatus === "all" || d.status === filterStatus;
-      return matchSearch && matchStatus;
+      const mr = filterRisk === "all" || d.risk_level === filterRisk;
+      return ms && mr;
     })
     .sort((a, b) => {
-      const va = String(a[sortField]);
-      const vb = String(b[sortField]);
+      const va = String((a as Record<string, unknown>)[sortField as string]);
+      const vb = String((b as Record<string, unknown>)[sortField as string]);
+      if (sortField === "risk_score") {
+        return sortDir === "asc" ? a.risk_score - b.risk_score : b.risk_score - a.risk_score;
+      }
       return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
     });
 
   const handleSort = (field: keyof Device) => {
     if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortField(field); setSortDir("asc"); }
+    else { setSortField(field); setSortDir("desc"); }
   };
 
   const SortIcon = ({ field }: { field: keyof Device }) => {
@@ -75,7 +74,7 @@ export default function DeviceList() {
     return sortDir === "asc" ? <ChevronUp size={12} className="text-primary" /> : <ChevronDown size={12} className="text-primary" />;
   };
 
-  const counts = { all: devices.length, online: devices.filter(d => d.status === "online").length, warning: devices.filter(d => d.status === "warning").length, critical: devices.filter(d => d.status === "critical").length, offline: devices.filter(d => d.status === "offline").length };
+  const counts = { all: devices.length, CRITICAL: devices.filter(d => d.risk_level === "CRITICAL").length, HIGH: devices.filter(d => d.risk_level === "HIGH").length, MEDIUM: devices.filter(d => d.risk_level === "MEDIUM").length, LOW: devices.filter(d => d.risk_level === "LOW").length };
 
   return (
     <div className="space-y-5">
@@ -85,24 +84,20 @@ export default function DeviceList() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search by name, IP, or ID..."
+            placeholder="Search hostname, IP, or ID..."
             className="bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm w-full"
           />
         </div>
-
         <div className="flex items-center gap-2">
           <Filter size={14} className="text-muted-foreground" />
-          {(["all", "online", "warning", "critical", "offline"] as const).map(s => (
+          {(["all", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map(r => (
             <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
+              key={r}
+              onClick={() => setFilterRisk(r)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize border transition-colors
-                ${filterStatus === s
-                  ? "bg-primary/15 text-primary border-primary/40"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-border"
-                }`}
+                ${filterRisk === r ? "bg-primary/15 text-primary border-primary/40" : "border-border text-muted-foreground hover:text-foreground"}`}
             >
-              {s} {s !== "all" && <span className="ml-1 opacity-70">({counts[s]})</span>}
+              {r === "all" ? "All" : r} {r !== "all" && <span className="ml-1 opacity-70">({counts[r]})</span>}
             </button>
           ))}
         </div>
@@ -114,63 +109,127 @@ export default function DeviceList() {
             <thead>
               <tr className="border-b border-border bg-muted/20">
                 {[
-                  { key: "id", label: "Device ID" },
-                  { key: "name", label: "Name" },
-                  { key: "type", label: "Type" },
-                  { key: "ip", label: "IP Address" },
-                  { key: "status", label: "Status" },
-                  { key: "threats", label: "Threats" },
-                  { key: "firmware", label: "Firmware" },
-                  { key: "lastSeen", label: "Last Seen" },
-                  { key: "location", label: "Location" },
+                  { key: "id", label: "ID" }, { key: "hostname", label: "Hostname" },
+                  { key: "device_type", label: "Type" }, { key: "ip", label: "IP" },
+                  { key: "state", label: "State" }, { key: "risk_level", label: "Risk" },
+                  { key: "risk_score", label: "Score" }, { key: "open_ports", label: "Ports" },
+                  { key: "cves", label: "CVEs" }, { key: "firmware", label: "Firmware" },
+                  { key: "last_seen", label: "Last Seen" },
                 ].map(col => (
                   <th
                     key={col.key}
                     onClick={() => handleSort(col.key as keyof Device)}
                     className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground select-none"
                   >
-                    <div className="flex items-center gap-1">
-                      {col.label}
-                      <SortIcon field={col.key as keyof Device} />
-                    </div>
+                    <div className="flex items-center gap-1">{col.label}<SortIcon field={col.key as keyof Device} /></div>
                   </th>
                 ))}
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((device, i) => {
-                const Icon = typeIcons[device.type];
-                const sc = statusConfig[device.status];
+                const Icon = typeIcons[device.device_type] ?? Cpu;
+                const rc = riskConfig[device.risk_level];
+                const sc = stateConfig[device.state];
+                const isExp = expanded === device.id;
+
                 return (
-                  <tr key={device.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? "" : "bg-background/20"}`}>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{device.id}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                          <Icon size={13} className="text-primary" />
+                  <>
+                    <tr
+                      key={device.id}
+                      className={`border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer ${i % 2 === 0 ? "" : "bg-background/20"}`}
+                      onClick={() => setExpanded(isExp ? null : device.id)}
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{device.id}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                            <Icon size={13} className="text-primary" />
+                          </div>
+                          <span className="font-medium text-foreground text-xs">{device.hostname}</span>
                         </div>
-                        <span className="font-medium text-foreground">{device.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{device.type}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-foreground">{device.ip}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${sc.className}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                        {sc.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {device.threats > 0 ? (
-                        <span className="text-red-400 font-semibold">{device.threats}</span>
-                      ) : (
-                        <span className="text-emerald-400">0</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{device.firmware}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{device.lastSeen}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{device.location}</td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{device.device_type}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-foreground">{device.ip}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1.5 text-xs">
+                          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                          <span className={device.state === "up" ? "text-emerald-400" : "text-muted-foreground"}>{sc.label}</span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${rc.className}`}>{rc.label}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${device.risk_score}%`,
+                                background: device.risk_score > 80 ? "#EF4444" : device.risk_score > 50 ? "#F59E0B" : "#10B981",
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs font-mono text-muted-foreground">{device.risk_score}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-foreground">{device.open_ports.length}</td>
+                      <td className="px-4 py-3">
+                        {device.cves.length > 0
+                          ? <span className="text-red-400 font-bold text-xs">{device.cves.length}</span>
+                          : <span className="text-emerald-400 text-xs">0</span>}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{device.firmware}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{relativeTime(device.last_seen)}</td>
+                      <td className="px-4 py-3">
+                        <ChevronRight size={14} className={`text-muted-foreground transition-transform ${isExp ? "rotate-90" : ""}`} />
+                      </td>
+                    </tr>
+                    {isExp && (
+                      <tr key={`${device.id}-exp`} className="bg-muted/10 border-b border-border/50">
+                        <td colSpan={12} className="px-6 py-4">
+                          <div className="grid grid-cols-3 gap-6">
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Open Ports</p>
+                              {device.open_ports.length > 0 ? device.open_ports.map(p => (
+                                <div key={p.port} className="flex items-center justify-between px-2 py-1.5 rounded bg-background/50 border border-border/50 mb-1">
+                                  <span className="font-mono text-xs text-primary">{p.port}/{p.service}</span>
+                                  <span className="text-xs text-muted-foreground">{p.product} {p.version}</span>
+                                </div>
+                              )) : <p className="text-xs text-muted-foreground">No open ports detected</p>}
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">CVEs</p>
+                              {device.cves.length > 0 ? device.cves.map(c => (
+                                <div key={c.cve_id} className="px-2 py-2 rounded bg-red-400/10 border border-red-400/30 mb-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-mono text-red-400">{c.cve_id}</span>
+                                    <span className="text-xs font-bold text-red-400">CVSS {c.cvss_score}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{c.description}</p>
+                                </div>
+                              )) : <p className="text-xs text-muted-foreground">No known CVEs</p>}
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">MITRE ATT&amp;CK Mappings</p>
+                              {device.mitre_mappings.length > 0 ? device.mitre_mappings.map((m, mi) => (
+                                <div key={mi} className="px-2 py-1.5 rounded bg-primary/10 border border-primary/30 mb-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <Shield size={10} className="text-primary" />
+                                    <span className="text-xs font-mono text-primary">{m.technique_id}</span>
+                                    <span className="text-xs text-foreground">{m.technique_name}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-0.5 ml-4">{m.tactic} — {m.description}</p>
+                                </div>
+                              )) : <p className="text-xs text-muted-foreground">No MITRE mappings</p>}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
@@ -181,7 +240,7 @@ export default function DeviceList() {
         </div>
         <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
           <span>Showing {filtered.length} of {devices.length} devices</span>
-          <span className="font-mono">Last sync: just now</span>
+          <span className="font-mono">Scan: {data.scan_metadata.scan_id}</span>
         </div>
       </div>
     </div>
