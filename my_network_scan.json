@@ -1,0 +1,170 @@
+[
+  {
+    "ip": "192.168.29.148",
+    "hostname": "Unknown",
+    "state": "up",
+    "open_ports": [
+      {
+        "port": 22,
+        "state": "closed",
+        "service": "ssh",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 23,
+        "state": "closed",
+        "service": "telnet",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 80,
+        "state": "closed",
+        "service": "http",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 443,
+        "state": "closed",
+        "service": "https",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 554,
+        "state": "closed",
+        "service": "rtsp",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 1883,
+        "state": "closed",
+        "service": "mqtt",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 8080,
+        "state": "closed",
+        "service": "http-proxy",
+        "product": "",
+        "version": ""
+      }
+    ]
+  },
+  {
+    "ip": "192.168.29.235",
+    "hostname": "Unknown",
+    "state": "up",
+    "open_ports": [
+      {
+        "port": 22,
+        "state": "closed",
+        "service": "ssh",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 23,
+        "state": "closed",
+        "service": "telnet",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 80,
+        "state": "closed",
+        "service": "http",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 443,
+        "state": "closed",
+        "service": "https",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 554,
+        "state": "closed",
+        "service": "rtsp",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 1883,
+        "state": "closed",
+        "service": "mqtt",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 8080,
+        "state": "closed",
+        "service": "http-proxy",
+        "product": "",
+        "version": ""
+      }
+    ]
+  },
+  {
+    "ip": "192.168.29.69",
+    "hostname": "Unknown",
+    "state": "up",
+    "open_ports": [
+      {
+        "port": 22,
+        "state": "closed",
+        "service": "ssh",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 23,
+        "state": "closed",
+        "service": "telnet",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 80,
+        "state": "closed",
+        "service": "http",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 443,
+        "state": "closed",
+        "service": "https",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 554,
+        "state": "closed",
+        "service": "rtsp",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 1883,
+        "state": "closed",
+        "service": "mqtt",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 8080,
+        "state": "closed",
+        "service": "http-proxy",
+        "product": "",
+        "version": ""
+      }
+    ]
+  }
+]
