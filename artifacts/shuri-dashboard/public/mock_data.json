@@ -712,5 +712,130 @@
       "active_threats":   { "value": "10",     "trend": "+10", "up": false },
       "resolved_today":   { "value": "1",      "trend": "+1",  "up": true  }
     }
-  }
+  },
+  "honeypot_alerts": [
+    {
+      "timestamp": "2026-03-25T14:31:04.112Z",
+      "honeypot_type": "fake_telnet",
+      "honeypot_port": 2323,
+      "attacker_ip": "185.220.101.47",
+      "credentials_tried": "admin:admin",
+      "mitre_technique": "T0812: Default Credentials",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:31:09.883Z",
+      "honeypot_type": "fake_telnet",
+      "honeypot_port": 2323,
+      "attacker_ip": "185.220.101.47",
+      "credentials_tried": "root:root",
+      "mitre_technique": "T0812: Default Credentials",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:31:22.541Z",
+      "honeypot_type": "fake_telnet",
+      "honeypot_port": 2323,
+      "attacker_ip": "45.142.212.100",
+      "credentials_tried": "admin:password",
+      "mitre_technique": "T0812: Default Credentials",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:32:01.774Z",
+      "honeypot_type": "fake_http_admin",
+      "honeypot_port": 8080,
+      "attacker_ip": "91.240.118.172",
+      "path_accessed": "/admin",
+      "user_agent": "Mozilla/5.0 (compatible; Googlebot/2.1)",
+      "mitre_technique": "T0846: Remote System Discovery",
+      "severity": "MEDIUM"
+    },
+    {
+      "timestamp": "2026-03-25T14:32:14.309Z",
+      "honeypot_type": "fake_http_admin",
+      "honeypot_port": 8080,
+      "attacker_ip": "91.240.118.172",
+      "path_accessed": "/login",
+      "credentials_posted": "user=admin&pass=1234",
+      "mitre_technique": "T0812: Default Credentials",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:33:00.220Z",
+      "honeypot_type": "fake_http_admin",
+      "honeypot_port": 8080,
+      "attacker_ip": "194.165.16.11",
+      "path_accessed": "/cgi-bin/luci",
+      "user_agent": "python-requests/2.28.0",
+      "mitre_technique": "T0846: Remote System Discovery",
+      "severity": "MEDIUM"
+    },
+    {
+      "timestamp": "2026-03-25T14:33:15.910Z",
+      "honeypot_type": "fake_http_admin",
+      "honeypot_port": 8080,
+      "attacker_ip": "194.165.16.11",
+      "path_accessed": "/login",
+      "credentials_posted": "user=root&pass=toor",
+      "mitre_technique": "T0812: Default Credentials",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:34:07.003Z",
+      "honeypot_type": "fake_mqtt",
+      "honeypot_port": 1883,
+      "attacker_ip": "23.129.64.190",
+      "mqtt_client_id": "MQTT_SCANNER_v2",
+      "raw_data_hex": "102800044d5154540402003c002254657374436c69656e74",
+      "mitre_technique": "T0885: Commonly Used Port",
+      "severity": "MEDIUM"
+    },
+    {
+      "timestamp": "2026-03-25T14:34:08.441Z",
+      "honeypot_type": "fake_mqtt_followup",
+      "honeypot_port": 1883,
+      "attacker_ip": "23.129.64.190",
+      "packet_hex": "820e000100092f73656e736f72732f23",
+      "mitre_technique": "T0885: Commonly Used Port",
+      "severity": "LOW"
+    },
+    {
+      "timestamp": "2026-03-25T14:35:22.660Z",
+      "honeypot_type": "fake_ssh",
+      "honeypot_port": 2222,
+      "attacker_ip": "185.220.101.57",
+      "client_banner": "SSH-2.0-libssh2_1.10.0",
+      "mitre_technique": "T0886: Remote Services",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:36:01.812Z",
+      "honeypot_type": "fake_ssh",
+      "honeypot_port": 2222,
+      "attacker_ip": "89.248.167.131",
+      "client_banner": "SSH-2.0-Go",
+      "mitre_technique": "T0886: Remote Services",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:38:44.190Z",
+      "honeypot_type": "fake_telnet",
+      "honeypot_port": 2323,
+      "attacker_ip": "198.199.88.110",
+      "credentials_tried": "admin:1234",
+      "mitre_technique": "T0812: Default Credentials",
+      "severity": "HIGH"
+    },
+    {
+      "timestamp": "2026-03-25T14:40:11.002Z",
+      "honeypot_type": "fake_mqtt",
+      "honeypot_port": 1883,
+      "attacker_ip": "77.247.110.100",
+      "mqtt_client_id": "iot_probe_001",
+      "raw_data_hex": "101a00044d5154540402003c000e696f745f70726f6265",
+      "mitre_technique": "T0885: Commonly Used Port",
+      "severity": "MEDIUM"
+    }
+  ]
 }

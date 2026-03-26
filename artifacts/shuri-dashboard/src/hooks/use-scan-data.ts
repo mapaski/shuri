@@ -102,6 +102,23 @@ export interface DeviceTraffic {
   threats: number;
 }
 
+export interface HoneypotAlert {
+  timestamp: string;
+  honeypot_type: "fake_telnet" | "fake_http_admin" | "fake_mqtt" | "fake_mqtt_followup" | "fake_ssh";
+  honeypot_port: number;
+  attacker_ip: string;
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  mitre_technique: string;
+  credentials_tried?: string;
+  credentials_posted?: string;
+  path_accessed?: string;
+  user_agent?: string;
+  mqtt_client_id?: string;
+  raw_data_hex?: string;
+  packet_hex?: string;
+  client_banner?: string;
+}
+
 export interface ScanData {
   scan_metadata: {
     scan_id: string;
@@ -133,6 +150,7 @@ export interface ScanData {
       resolved_today: { value: string; trend: string; up: boolean };
     };
   };
+  honeypot_alerts: HoneypotAlert[];
 }
 
 export function useScanData() {
