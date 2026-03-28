@@ -166,24 +166,24 @@ function mapBackendDevice(device: any, index: number): Device {
   else if (riskScore >= 10) riskLevel = "MEDIUM";
 
   return {
-    id: `DEV-${String(index + 1).padStart(3, "0")}`,
+    id: device.id || `DEV-${String(index + 1).padStart(3, "0")}`,
     ip: device.ip || "Unknown",
     hostname: device.hostname || "Unknown",
-    device_type: "IoT Device",
+    device_type: device.device_type || "IoT Device",
     mac: device.mac || "N/A",
     state: device.state === "up" ? "up" : "down",
     risk_level: riskLevel,
-    risk_score: riskScore,
-    location: "Local LAN",
-    last_seen: new Date().toISOString(),
-    firmware: device.http_banner?.version || "Unknown",
+    risk_score: device.risk_score ?? riskScore,
+    location: device.location || "Local LAN",
+    last_seen: device.last_seen || new Date().toISOString(),
+    firmware: device.firmware || device.http_banner?.version || "Unknown",
     open_ports: openPorts,
     http_banner: device.http_banner || null,
     cipher_suite: device.cipher_suite || null,
-    issues: [],
-    cves: [],
-    mitre_mappings: [],
-    owasp_mappings: [],
+    issues: device.issues || [],
+    cves: device.cves || [],
+    mitre_mappings: device.mitre_mappings || [],
+    owasp_mappings: device.owasp_mappings || [],
   };
 }
 
@@ -211,7 +211,7 @@ function mapHoneypotToAlert(h: HoneypotAlert, index: number): Alert {
   };
 }
 
-function getDemoData(): ScanData {
+function getBuiltInDemoData(): ScanData {
   const devices: Device[] = [
     {
       id: "DEV-001",
@@ -266,28 +266,6 @@ function getDemoData(): ScanData {
       },
       cipher_suite: null,
       issues: ["MQTT exposed"],
-      cves: [],
-      mitre_mappings: [],
-      owasp_mappings: [],
-    },
-    {
-      id: "DEV-003",
-      ip: "192.168.29.22",
-      hostname: "Smart TV",
-      device_type: "TV",
-      mac: "AA:BB:CC:DD:EE:03",
-      state: "up",
-      risk_level: "LOW",
-      risk_score: 8,
-      location: "Hall",
-      last_seen: new Date().toISOString(),
-      firmware: "v5.0.2",
-      open_ports: [
-        { port: 8008, state: "open", service: "http", product: "Chromecast", version: "1.0" },
-      ],
-      http_banner: null,
-      cipher_suite: null,
-      issues: [],
       cves: [],
       mitre_mappings: [],
       owasp_mappings: [],
@@ -360,63 +338,72 @@ export function useScanData() {
     queryKey: ["scan-data", DEMO_MODE ? "demo" : "live"],
     queryFn: async () => {
       if (DEMO_MODE) {
-        return getDemoData();
+        return getBuiltInDemoData();
       }
 
-      const [devicesRes, alertsRes, statusRes] = await Promise.all([
-        fetch(`${API_BASE}/devices`),
-        fetch(`${API_BASE}/alerts`),
-        fetch(`${API_BASE}/status`),
-      ]);
+      try {
+        const [devicesRes, alertsRes, statusRes] = await Promise.all([
+          fetch(`${API_BASE}/devices`),
+          fetch(`${API_BASE}/alerts`),
+          fetch(`${API_BASE}/status`),
+        ]);
 
-      if (!devicesRes.ok || !alertsRes.ok || !statusRes.ok) {
-        throw new Error("Failed to load backend data");
-      }
+        if (!devicesRes.ok || !alertsRes.ok || !statusRes.ok) {
+          throw new Error("Live backend unavailable");
+        }
 
-      const devicesJson = await devicesRes.json();
-      const alertsJson = await alertsRes.json();
-      const statusJson = await statusRes.json();
+        const devicesJson = await devicesRes.json();
+        const alertsJson = await alertsRes.json();
+        const statusJson = await statusRes.json();
 
-      const devices: Device[] = (devicesJson.devices || []).map(mapBackendDevice);
-      const honeypot_alerts: HoneypotAlert[] = alertsJson.alerts || [];
-      const alerts: Alert[] = honeypot_alerts.map(mapHoneypotToAlert);
+        const devices: Device[] = (devicesJson.devices || []).map(mapBackendDevice);
+        const honeypot_alerts: HoneypotAlert[] = alertsJson.alerts || [];
+        const alerts: Alert[] = honeypot_alerts.map(mapHoneypotToAlert);
 
-      const totalUp = devices.filter((d) => d.state === "up").length;
-      const totalDown = devices.filter((d) => d.state === "down").length;
+        const totalUp = devices.filter((d) => d.state === "up").length;
+        const totalDown = devices.filter((d) => d.state === "down").length;
 
-      return {
-        scan_metadata: {
-          scan_id: "SHURI-LIVE",
-          timestamp: statusJson.timestamp || new Date().toISOString(),
-          scanner: "SHURI Local Backend",
-          targets: devices.map((d) => d.ip),
-          ports_scanned: "22,23,80,443,554,1883,8080",
-          total_targets: devices.length,
-          total_up: totalUp,
-          total_down: totalDown,
-        },
-        devices,
-        alerts,
-        honeypot_alerts,
-        heatmap: {
-          traffic_by_hour: [],
-          device_traffic: [],
-          daily_intensity: [],
-        },
-        report: {
-          security_score: Math.max(0, 100 - devices.length * 5 - alerts.length * 3),
-          weekly_alerts: [],
-          threat_breakdown: [],
-          posture_scores: [],
-          audit_log: [],
-          kpis: {
-            security_score: { value: "Live", trend: "Backend connected", up: true },
-            devices_online: { value: `${totalUp}`, trend: "Current scan", up: true },
-            active_threats: { value: `${alerts.length}`, trend: "Honeypot events", up: alerts.length === 0 },
-            resolved_today: { value: "0", trend: "Not tracked", up: true },
+        return {
+          scan_metadata: {
+            scan_id: "SHURI-LIVE",
+            timestamp: statusJson.timestamp || new Date().toISOString(),
+            scanner: "SHURI Local Backend",
+            targets: devices.map((d) => d.ip),
+            ports_scanned: "22,23,80,443,554,1883,8080",
+            total_targets: devices.length,
+            total_up: totalUp,
+            total_down: totalDown,
           },
-        },
-      };
+          devices,
+          alerts,
+          honeypot_alerts,
+          heatmap: {
+            traffic_by_hour: [],
+            device_traffic: [],
+            daily_intensity: [],
+          },
+          report: {
+            security_score: Math.max(0, 100 - devices.length * 5 - alerts.length * 3),
+            weekly_alerts: [],
+            threat_breakdown: [],
+            posture_scores: [],
+            audit_log: [],
+            kpis: {
+              security_score: { value: "Live", trend: "Backend connected", up: true },
+              devices_online: { value: `${totalUp}`, trend: "Current scan", up: true },
+              active_threats: { value: `${alerts.length}`, trend: "Honeypot events", up: alerts.length === 0 },
+              resolved_today: { value: "0", trend: "Not tracked", up: true },
+            },
+          },
+        };
+      } catch {
+        const mockRes = await fetch("/mock_data.json");
+        if (mockRes.ok) {
+          return await mockRes.json();
+        }
+
+        return getBuiltInDemoData();
+      }
     },
     staleTime: 5000,
     retry: 1,
