@@ -6,6 +6,23 @@ It combines local network scanning, vulnerability analysis, attack-surface aware
 
 ---
 
+## Access SHURI
+
+### Public Demo
+Try the hosted SHURI dashboard here:  
+[https://shuri-dashboard.vercel.app](https://shuri-dashboard.vercel.app)
+
+> Note: This public deployment is a **demo interface** and uses demo/fallback data for visualization.  
+> Real scanning and honeypot monitoring require SHURI to run locally inside the target LAN.
+
+### Local Use
+To use SHURI on a real network, run it locally and open:
+
+- Frontend dashboard: `http://127.0.0.1:5173`
+- Backend API: `http://127.0.0.1:5000`
+
+---
+
 ## Problem Statement
 
 IoT devices such as smart cameras, bulbs, TVs, routers, speakers, and other connected appliances are often the weakest link in a network. They commonly suffer from:
