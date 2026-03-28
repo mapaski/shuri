@@ -1,6 +1,6 @@
 # SHURI
 
-SHURI is an IoT security platform that scans devices on a local network, identifies insecure services and weak configurations, calculates which devices are the most dangerous using blast radius scoring, and detects suspicious activity through honeypots.
+**SHURI** is an IoT security platform that scans devices on a local network, identifies insecure services and weak configurations, calculates which devices are the most dangerous using blast radius scoring, and detects suspicious activity through honeypots.
 
 It combines local network scanning, vulnerability analysis, attack-surface awareness, and alert logging into one system that can be consumed by a dashboard.
 
@@ -18,7 +18,11 @@ IoT devices such as smart cameras, bulbs, TVs, routers, speakers, and other conn
 
 Most scanners only answer: **what is vulnerable?**
 
-SHURI also asks: **what is dangerous, what can it reach, and is anyone already probing it?**
+SHURI also asks:
+
+- **what is dangerous?**
+- **what can it reach?**
+- **is anyone already probing it?**
 
 ---
 
@@ -57,116 +61,229 @@ All scan and alert data is served through a Flask API so a frontend dashboard ca
 
 ---
 
+## Architecture
+
+SHURI is designed as a **local edge-deployed IoT defense system**, not a cloud-only scanner.
+
+It runs **inside the target LAN**, which allows it to directly discover and assess local IoT devices that would not be reachable from the public internet.
+
+### Deployment model
+- **Scanner** runs locally inside the LAN
+- **Honeypots** run locally inside the LAN
+- **Flask backend API** runs locally inside the LAN
+- **Dashboard frontend** connects to that local backend
+
+This makes SHURI suitable for:
+- home networks
+- office LANs
+- lab environments
+- Raspberry Pi deployment
+
+---
+
 ## Backend Components
 
-### `shuri_local.py`
+### `backend/shuri_local.py`
 Local network scanner.  
 Scans a subnet and writes device output to:
-my_network_scan.json
 
-### `shuri_honeypots.py`
+- `backend/my_network_scan.json`
+
+### `backend/shuri_honeypots.py`
 Runs honeypot services and logs suspicious access attempts to:
 
-honeypot_alerts.json
+- `backend/honeypot_alerts.json`
 
-### `app.py`
+### `backend/app.py`
 Flask API that exposes:
 
-- `GET / → API status
-- `GET /devices → latest scan results
-- `GET /alerts → latest honeypot alerts
-- `POST /scan → trigger a local scan
+- `GET /status` → backend health and scan state
+- `GET /devices` → latest scan results
+- `GET /alerts` → latest honeypot alerts
+- `POST /scan` → trigger a local scan in the background
 
 ---
 
 ## Project Structure
+
 shuri/
-├── app.py
-├── shuri_local.py
-├── shuri_honeypots.py
-├── my_network_scan.json
-├── honeypot_alerts.json
-├── requirements.txt
-├── render.yaml
+├── backend/
+│   ├── app.py
+│   ├── shuri_local.py
+│   ├── shuri_honeypots.py
+│   ├── my_network_scan.json
+│   ├── honeypot_alerts.json
+│   └── ...
+├── frontend/
+│   ├── package.json
+│   └── shuri-dashboard/
+│       ├── src/
+│       ├── public/
+│       ├── package.json
+│       ├── package-lock.json
+│       ├── vite.config.ts
+│       ├── tsconfig.json
+│       ├── tsconfig.node.json
+│       ├── tailwind.config.cjs
+│       ├── postcss.config.cjs
+│       └── index.html
+├── README.md
 └── ...
+
 
 ---
 
 ## Running SHURI Locally
 
-### 1. Install dependencies
+### 1. Install backend dependencies
+
 bash
+cd backend
 pip install -r requirements.txt
 
-### 2. Find your network subnet
-On Windows:
+
+If needed, also install:
+bash
+pip install flask-cors
+
+
+Make sure **Nmap** is installed on the machine running SHURI.
+
+---
+
+### 2. Configure your subnet
+
+Find your local subnet.
+
+#### On Windows:
+bash
 ipconfig
 
+
 Example:
-IPv4 Address: 192.168.29.69
 
-Use the subnet in shuri_local.py:
+IPv4 Address: 192.168.29.xx
+
+Use the matching subnet in `backend/shuri_local.py`, for example:
+
 python
-MY_NETWORK = "192.168.29.0/24"
+MY_NETWORK = "192.168.29.x/xx"
 
-### 3. Run the scanner
-python shuri_local.py
 
-This creates:
-my_network_scan.json
+---
 
-### 4. Start the Flask API
+### 3. Start the backend API
+bash
+cd backend
 python app.py
 
-### 5. Start honeypots
-In another terminal:
-python shuri_honeypots.py
 
-### 6. Trigger a honeypot
-Open:
+Backend runs on:
+http://127.0.0.1:5000
+```
+
+---
+
+### 4. Start honeypots
+
+In another terminal:
+
+cd backend
+python shuri_honeypots.py
+```
+
+Example honeypot trigger:
 http://127.0.0.1:8080
+```
 
 This creates entries in:
-honeypot_alerts.json
+
+- `backend/honeypot_alerts.json`
+
+---
+
+### 5. Start the frontend dashboard
+
+In another terminal:
+bash
+cd frontend/shuri-dashboard
+npm install
+npm run dev
+
+Frontend runs on:
+http://127.0.0.1:5173
+
+If port 5173 is already in use, Vite may use another port such as 5174.
+
+---
+
+### 6. Trigger a scan
+
+Use terminal:
+
+bash
+curl -X POST http://127.0.0.1:5000/scan
+
+
+Then refresh the dashboard.
+
+This updates:
+
+- `backend/my_network_scan.json`
+
+---
 
 ### 7. Check API endpoints
-Devices:
-http://127.0.0.1:5000/devices
 
-Alerts:
-http://127.0.0.1:5000/alerts
-
-
-Scan trigger:
-http://127.0.0.1:5000/scan
+- Status: `http://127.0.0.1:5000/status`
+- Devices: `http://127.0.0.1:5000/devices`
+- Alerts: `http://127.0.0.1:5000/alerts`
+- Scan trigger: `http://127.0.0.1:5000/scan`
 
 ---
 
 ## API Endpoints
 
-### `GET /`
-Returns API status.
+### `GET /status`
+Returns backend status and scan state.
 
 ### `GET /devices`
-Returns the latest contents of my_network_scan.json.
+Returns the latest contents of scanned device data.
+
+Response format:
+json
+{
+  "count": 0,
+  "devices": []
+}
+
 
 ### `GET /alerts`
-Returns the latest contents of honeypot_alerts.json.
+Returns the latest contents of honeypot alert data.
+
+Response format:
+json
+{
+  "count": 5,
+  "alerts": [...]
+}
+
 
 ### `POST /scan`
-Runs the scanner and refreshes device data.
+Triggers a background network scan and refreshes device data.
 
 ---
 
 ## Example Workflow
 
-1. Run a local scan using shuri_local.py
-2. SHURI generates my_network_scan.json
-3. Start the Flask API with app.py
-4. Start honeypots with shuri_honeypots.py
-5. Trigger a honeypot interaction
-6. Alerts are written to honeypot_alerts.json
-7. Frontend dashboard reads /devices and /alerts
+1. Start the backend with `backend/app.py`
+2. Start honeypots with `backend/shuri_honeypots.py`
+3. Start the dashboard from `frontend/shuri-dashboard`
+4. Trigger a local scan using `POST /scan`
+5. SHURI updates `my_network_scan.json`
+6. Trigger a honeypot interaction
+7. Alerts are written to `honeypot_alerts.json`
+8. Frontend dashboard reads `/devices`, `/alerts`, and `/status`
 
 ---
 
@@ -190,8 +307,12 @@ Runs the scanner and refreshes device data.
 - custom blast radius scoring
 
 ### Frontend
-- React dashboard
-- integrated separately
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- TanStack React Query
+- Wouter
 
 ---
 
@@ -207,18 +328,20 @@ Runs the scanner and refreshes device data.
 - alert logging
 - local WiFi testing
 - backend integration for dashboard
+- working standalone frontend dashboard
 
 ### In Progress
-- final frontend integration
-- full dashboard live flow
 - presentation and documentation polish
+- stronger enrichment and scoring logic
+- final submission/demo refinement
 
 ---
 
 ## Limitations
 
-- Local scanning requires Nmap installed on the scanning machine
-- Cloud deployment cannot directly scan private home networks without a local agent
+- Local scanning requires **Nmap** installed on the scanning machine
+- SHURI must run **inside the target LAN**
+- Cloud deployment alone cannot directly scan private home networks without a local agent
 - Honeypots are lightweight demonstration services
 - Some device information depends on what the target exposes
 
@@ -232,6 +355,7 @@ Runs the scanner and refreshes device data.
 - better real-time alert streaming
 - automated mitigation actions
 - stronger device classification
+- persistent storage/database integration
 
 ---
 
@@ -246,3 +370,5 @@ Runs the scanner and refreshes device data.
 ## Summary
 
 SHURI is an IoT security platform that scans local networks, identifies weak points, calculates blast radius, detects suspicious activity using honeypots, and serves everything through a dashboard-ready API.
+
+Its core strength is that it operates **from within the LAN**, making it practical for real local-network IoT defense and suitable for edge deployment on systems like laptops or Raspberry Pi.
