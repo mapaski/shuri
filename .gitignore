@@ -51,3 +51,11 @@ backend/data/honeypot_alerts.json
 backend/data/scan_output.json
 node_modules/
 frontend/.env.local
+
+dashboard-clean/
+frontend/shuri-main.zip
+frontend/shuri-main/
+node_modules/
+dist/
+__pycache__/
+*.pyc

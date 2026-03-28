@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 214 28% 17%;
+  --foreground: 210 40% 96%;
+  --border: 217 19% 27%;
+  --input: 217 19% 30%;
+  --ring: 271 91% 65%;
+  --card: 215 25% 20%;
+  --card-foreground: 210 40% 96%;
+  --popover: 215 28% 16%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 271 91% 65%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 217 19% 27%;
+  --secondary-foreground: 210 40% 90%;
+  --muted: 215 25% 22%;
+  --muted-foreground: 215 16% 57%;
+  --accent: 271 60% 30%;
+  --accent-foreground: 271 91% 90%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --sidebar: 215 33% 13%;
+  --sidebar-foreground: 210 40% 96%;
+  --sidebar-border: 217 19% 24%;
+  --sidebar-primary: 271 91% 65%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 215 25% 20%;
+  --sidebar-accent-foreground: 210 40% 96%;
+  --sidebar-ring: 271 91% 65%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    margin: 0;
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: Inter, system-ui, sans-serif;
+  }
+}

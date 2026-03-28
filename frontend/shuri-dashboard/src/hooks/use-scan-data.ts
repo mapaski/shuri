@@ -1,0 +1,276 @@
+import { useQuery } from "@tanstack/react-query";
+
+const API_BASE = "http://127.0.0.1:5000";
+
+export interface OpenPort {
+  port: number;
+  state: string;
+  service: string;
+  product: string;
+  version: string;
+}
+
+export interface HttpBanner {
+  server: string;
+  software: string;
+  version: string;
+  status_code: number;
+  x_powered_by?: string;
+}
+
+export interface CipherSuite {
+  tls_version: string;
+  cipher_name: string;
+  key_bits: number;
+  weak_cipher: boolean;
+  weak_tls: boolean;
+  risk_flags: string[];
+  risk_level: string;
+}
+
+export interface CVE {
+  cve_id: string;
+  cvss_score: number;
+  description: string;
+  severity: string;
+  software?: string;
+  version?: string;
+}
+
+export interface MitreMapping {
+  issue: string;
+  technique_id: string;
+  technique_name: string;
+  tactic: string;
+  description: string;
+}
+
+export interface OwaspMapping {
+  issue: string;
+  category: string;
+  name: string;
+  description: string;
+}
+
+export interface Device {
+  id: string;
+  ip: string;
+  hostname: string;
+  device_type: string;
+  mac: string;
+  state: "up" | "down";
+  risk_level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  risk_score: number;
+  location: string;
+  last_seen: string;
+  firmware: string;
+  open_ports: OpenPort[];
+  http_banner: HttpBanner | null;
+  cipher_suite: CipherSuite | null;
+  issues: string[];
+  cves: CVE[];
+  mitre_mappings: MitreMapping[];
+  owasp_mappings: OwaspMapping[];
+}
+
+export interface Alert {
+  id: string;
+  device_id: string;
+  device_name: string;
+  device_ip: string;
+  title: string;
+  description: string;
+  severity: "critical" | "high" | "medium" | "low";
+  status: "active" | "investigating" | "resolved";
+  type: string;
+  mitre_id: string;
+  mitre_name: string;
+  owasp_category: string;
+  time: string;
+  count: number;
+}
+
+export interface TrafficHour {
+  hour: string;
+  inbound: number;
+  outbound: number;
+  anomalies: number;
+}
+
+export interface DeviceTraffic {
+  device: string;
+  inbound: number;
+  outbound: number;
+  threats: number;
+}
+
+export interface HoneypotAlert {
+  timestamp: string;
+  honeypot_type: "fake_telnet" | "fake_http_admin" | "fake_mqtt" | "fake_mqtt_followup" | "fake_ssh";
+  honeypot_port: number;
+  attacker_ip: string;
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  mitre_technique: string;
+  credentials_tried?: string;
+  credentials_posted?: string;
+  path_accessed?: string;
+  user_agent?: string;
+  mqtt_client_id?: string;
+  raw_data_hex?: string;
+  packet_hex?: string;
+  client_banner?: string;
+}
+
+export interface ScanData {
+  scan_metadata: {
+    scan_id: string;
+    timestamp: string;
+    scanner: string;
+    targets: string[];
+    ports_scanned: string;
+    total_targets: number;
+    total_up: number;
+    total_down: number;
+  };
+  devices: Device[];
+  alerts: Alert[];
+  heatmap: {
+    traffic_by_hour: TrafficHour[];
+    device_traffic: DeviceTraffic[];
+    daily_intensity: { day: string; hours: number[] }[];
+  };
+  report: {
+    security_score: number;
+    weekly_alerts: { day: string; critical: number; high: number; medium: number; low: number }[];
+    threat_breakdown: { name: string; value: number; color: string }[];
+    posture_scores: { metric: string; value: number }[];
+    audit_log: { time: string; action: string; user: string; outcome: string }[];
+    kpis: {
+      security_score: { value: string; trend: string; up: boolean };
+      devices_online: { value: string; trend: string; up: boolean };
+      active_threats: { value: string; trend: string; up: boolean };
+      resolved_today: { value: string; trend: string; up: boolean };
+    };
+  };
+  honeypot_alerts: HoneypotAlert[];
+}
+
+function mapBackendDevice(device: any, index: number): Device {
+  const openPorts = (device.open_ports || []).filter((p: any) => p.state === "open");
+  const riskScore = openPorts.length * 10;
+
+  let riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "LOW";
+  if (riskScore >= 40) riskLevel = "CRITICAL";
+  else if (riskScore >= 25) riskLevel = "HIGH";
+  else if (riskScore >= 10) riskLevel = "MEDIUM";
+
+  return {
+    id: `DEV-${String(index + 1).padStart(3, "0")}`,
+    ip: device.ip || "Unknown",
+    hostname: device.hostname || "Unknown",
+    device_type: "IoT Device",
+    mac: device.mac || "N/A",
+    state: device.state === "up" ? "up" : "down",
+    risk_level: riskLevel,
+    risk_score: riskScore,
+    location: "Local LAN",
+    last_seen: new Date().toISOString(),
+    firmware: device.http_banner?.version || "Unknown",
+    open_ports: openPorts,
+    http_banner: device.http_banner || null,
+    cipher_suite: device.cipher_suite || null,
+    issues: [],
+    cves: [],
+    mitre_mappings: [],
+    owasp_mappings: [],
+  };
+}
+
+function mapHoneypotToAlert(h: HoneypotAlert, index: number): Alert {
+  return {
+    id: `ALERT-${index + 1}`,
+    device_id: `HP-${index + 1}`,
+    device_name: h.honeypot_type,
+    device_ip: h.attacker_ip,
+    title: `${h.honeypot_type} triggered`,
+    description: `Suspicious interaction detected from ${h.attacker_ip} on port ${h.honeypot_port}`,
+    severity:
+      h.severity === "HIGH"
+        ? "high"
+        : h.severity === "MEDIUM"
+        ? "medium"
+        : "low",
+    status: "active",
+    type: "Intrusion",
+    mitre_id: h.mitre_technique.split(":")[0],
+    mitre_name: h.mitre_technique.split(":").slice(1).join(":").trim(),
+    owasp_category: "I2",
+    time: h.timestamp,
+    count: 1,
+  };
+}
+
+export function useScanData() {
+  return useQuery<ScanData>({
+    queryKey: ["scan-data"],
+    queryFn: async () => {
+      const [devicesRes, alertsRes, statusRes] = await Promise.all([
+        fetch(`${API_BASE}/devices`),
+        fetch(`${API_BASE}/alerts`),
+        fetch(`${API_BASE}/status`),
+      ]);
+
+      if (!devicesRes.ok || !alertsRes.ok || !statusRes.ok) {
+        throw new Error("Failed to load backend data");
+      }
+
+      const devicesJson = await devicesRes.json();
+      const alertsJson = await alertsRes.json();
+      const statusJson = await statusRes.json();
+
+      const devices: Device[] = (devicesJson.devices || []).map(mapBackendDevice);
+      const honeypot_alerts: HoneypotAlert[] = alertsJson.alerts || [];
+      const alerts: Alert[] = honeypot_alerts.map(mapHoneypotToAlert);
+
+      const totalUp = devices.filter((d) => d.state === "up").length;
+      const totalDown = devices.filter((d) => d.state === "down").length;
+
+      return {
+        scan_metadata: {
+          scan_id: "SHURI-LIVE",
+          timestamp: statusJson.timestamp || new Date().toISOString(),
+          scanner: "SHURI Local Backend",
+          targets: devices.map((d) => d.ip),
+          ports_scanned: "22,23,80,443,554,1883,8080",
+          total_targets: devices.length,
+          total_up: totalUp,
+          total_down: totalDown,
+        },
+        devices,
+        alerts,
+        honeypot_alerts,
+        heatmap: {
+          traffic_by_hour: [],
+          device_traffic: [],
+          daily_intensity: [],
+        },
+        report: {
+          security_score: Math.max(0, 100 - devices.length * 5 - alerts.length * 3),
+          weekly_alerts: [],
+          threat_breakdown: [],
+          posture_scores: [],
+          audit_log: [],
+          kpis: {
+            security_score: { value: "Live", trend: "Backend connected", up: true },
+            devices_online: { value: `${totalUp}`, trend: "Current scan", up: true },
+            active_threats: { value: `${alerts.length}`, trend: "Honeypot events", up: alerts.length === 0 },
+            resolved_today: { value: "0", trend: "Not tracked", up: true },
+          },
+        },
+      };
+    },
+    staleTime: 5000,
+    retry: 1,
+    refetchInterval: 5000,
+  });
+}

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SHURI-Dashboard"
+version = "1.0.0"
+id = "artifacts/shuri-dashboard"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26013
+
+[services.development]
+run = "pnpm --filter @workspace/shuri-dashboard run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/shuri-dashboard", "run", "build" ]
+publicDir = "artifacts/shuri-dashboard/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26013"
+BASE_PATH = "/"

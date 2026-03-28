@@ -1,0 +1,72 @@
+[
+  {
+    "timestamp": "2026-03-26T19:17:42.526641",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  },
+  {
+    "timestamp": "2026-03-26T19:17:42.638945",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/favicon.ico",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  },
+  {
+    "timestamp": "2026-03-26T19:19:39.957649",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7920",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  },
+  {
+    "timestamp": "2026-03-26T21:50:44.888806",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  },
+  {
+    "timestamp": "2026-03-26T21:50:45.031274",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/favicon.ico",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  },
+  {
+    "timestamp": "2026-03-28T22:36:08.369532",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  },
+  {
+    "timestamp": "2026-03-28T22:36:08.985030",
+    "honeypot_type": "fake_http_admin",
+    "honeypot_port": 8080,
+    "attacker_ip": "127.0.0.1",
+    "path_accessed": "/favicon.ico",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "mitre_technique": "T0846: Remote System Discovery",
+    "severity": "MEDIUM"
+  }
+]
