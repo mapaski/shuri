@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-const API_BASE = "http://127.0.0.1:5000";
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:5000";
 
 export interface OpenPort {
   port: number;
@@ -210,10 +211,158 @@ function mapHoneypotToAlert(h: HoneypotAlert, index: number): Alert {
   };
 }
 
+function getDemoData(): ScanData {
+  const devices: Device[] = [
+    {
+      id: "DEV-001",
+      ip: "192.168.29.10",
+      hostname: "Smart Camera",
+      device_type: "Camera",
+      mac: "AA:BB:CC:DD:EE:01",
+      state: "up",
+      risk_level: "HIGH",
+      risk_score: 32,
+      location: "Living Room",
+      last_seen: new Date().toISOString(),
+      firmware: "v1.2.4",
+      open_ports: [
+        { port: 80, state: "open", service: "http", product: "Boa", version: "0.94" },
+        { port: 554, state: "open", service: "rtsp", product: "RTSP", version: "1.0" },
+        { port: 23, state: "open", service: "telnet", product: "BusyBox", version: "1.19" },
+      ],
+      http_banner: {
+        server: "Boa",
+        software: "Boa",
+        version: "0.94",
+        status_code: 200,
+      },
+      cipher_suite: null,
+      issues: ["Telnet exposed", "Outdated web server"],
+      cves: [],
+      mitre_mappings: [],
+      owasp_mappings: [],
+    },
+    {
+      id: "DEV-002",
+      ip: "192.168.29.15",
+      hostname: "Smart Bulb Hub",
+      device_type: "Hub",
+      mac: "AA:BB:CC:DD:EE:02",
+      state: "up",
+      risk_level: "MEDIUM",
+      risk_score: 18,
+      location: "Bedroom",
+      last_seen: new Date().toISOString(),
+      firmware: "v3.1.0",
+      open_ports: [
+        { port: 80, state: "open", service: "http", product: "nginx", version: "1.18" },
+        { port: 1883, state: "open", service: "mqtt", product: "Mosquitto", version: "2.0" },
+      ],
+      http_banner: {
+        server: "nginx",
+        software: "nginx",
+        version: "1.18",
+        status_code: 200,
+      },
+      cipher_suite: null,
+      issues: ["MQTT exposed"],
+      cves: [],
+      mitre_mappings: [],
+      owasp_mappings: [],
+    },
+    {
+      id: "DEV-003",
+      ip: "192.168.29.22",
+      hostname: "Smart TV",
+      device_type: "TV",
+      mac: "AA:BB:CC:DD:EE:03",
+      state: "up",
+      risk_level: "LOW",
+      risk_score: 8,
+      location: "Hall",
+      last_seen: new Date().toISOString(),
+      firmware: "v5.0.2",
+      open_ports: [
+        { port: 8008, state: "open", service: "http", product: "Chromecast", version: "1.0" },
+      ],
+      http_banner: null,
+      cipher_suite: null,
+      issues: [],
+      cves: [],
+      mitre_mappings: [],
+      owasp_mappings: [],
+    },
+  ];
+
+  const honeypot_alerts: HoneypotAlert[] = [
+    {
+      timestamp: new Date().toISOString(),
+      honeypot_type: "fake_http_admin",
+      honeypot_port: 8080,
+      attacker_ip: "203.0.113.12",
+      severity: "MEDIUM",
+      mitre_technique: "T0846: Remote System Discovery",
+      path_accessed: "/",
+      user_agent: "Mozilla/5.0",
+    },
+    {
+      timestamp: new Date().toISOString(),
+      honeypot_type: "fake_telnet",
+      honeypot_port: 2323,
+      attacker_ip: "198.51.100.7",
+      severity: "HIGH",
+      mitre_technique: "T0859: Valid Accounts",
+      credentials_tried: "admin:admin",
+    },
+  ];
+
+  const alerts: Alert[] = honeypot_alerts.map(mapHoneypotToAlert);
+  const totalUp = devices.filter((d) => d.state === "up").length;
+  const totalDown = devices.filter((d) => d.state === "down").length;
+
+  return {
+    scan_metadata: {
+      scan_id: "SHURI-DEMO",
+      timestamp: new Date().toISOString(),
+      scanner: "SHURI Demo Mode",
+      targets: devices.map((d) => d.ip),
+      ports_scanned: "22,23,80,443,554,1883,8080",
+      total_targets: devices.length,
+      total_up: totalUp,
+      total_down: totalDown,
+    },
+    devices,
+    alerts,
+    honeypot_alerts,
+    heatmap: {
+      traffic_by_hour: [],
+      device_traffic: [],
+      daily_intensity: [],
+    },
+    report: {
+      security_score: 78,
+      weekly_alerts: [],
+      threat_breakdown: [],
+      posture_scores: [],
+      audit_log: [],
+      kpis: {
+        security_score: { value: "78", trend: "Demo posture", up: true },
+        devices_online: { value: `${totalUp}`, trend: "Demo dataset", up: true },
+        active_threats: { value: `${alerts.length}`, trend: "Demo honeypot events", up: false },
+        resolved_today: { value: "1", trend: "Demo metric", up: true },
+      },
+    },
+  };
+}
+
 export function useScanData() {
   return useQuery<ScanData>({
-    queryKey: ["scan-data"],
+    queryKey: ["scan-data", DEMO_MODE ? "demo" : "live"],
     queryFn: async () => {
+      if (DEMO_MODE) {
+        return getDemoData();
+      }
+
       const [devicesRes, alertsRes, statusRes] = await Promise.all([
         fetch(`${API_BASE}/devices`),
         fetch(`${API_BASE}/alerts`),
@@ -271,6 +420,6 @@ export function useScanData() {
     },
     staleTime: 5000,
     retry: 1,
-    refetchInterval: 5000,
+    refetchInterval: DEMO_MODE ? false : 5000,
   });
 }
