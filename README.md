@@ -119,34 +119,6 @@ Flask API that exposes:
 - `GET /alerts` → latest honeypot alerts
 - `POST /scan` → trigger a local scan in the background
 
----
-
-## Project Structure
-
-shuri/
-├── backend/
-│   ├── app.py
-│   ├── shuri_local.py
-│   ├── shuri_honeypots.py
-│   ├── my_network_scan.json
-│   ├── honeypot_alerts.json
-│   └── ...
-├── frontend/
-│   ├── package.json
-│   └── shuri-dashboard/
-│       ├── src/
-│       ├── public/
-│       ├── package.json
-│       ├── package-lock.json
-│       ├── vite.config.ts
-│       ├── tsconfig.json
-│       ├── tsconfig.node.json
-│       ├── tailwind.config.cjs
-│       ├── postcss.config.cjs
-│       └── index.html
-├── README.md
-└── ...
-
 
 ---
 
