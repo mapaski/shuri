@@ -23,6 +23,23 @@ To use SHURI on a real network, run it locally and open:
 
 ---
 
+## Quick Start (Linux)
+
+```bash
+git clone https://github.com/mapaski/shuri.git
+cd shuri
+bash setup.sh
+bash ~/shuri/start.sh
+```
+
+Then open http://localhost:5173 and trigger a scan:
+```bash
+curl -X POST http://127.0.0.1:5000/scan
+```
+> `setup.sh` handles all dependencies, venv, and subnet auto-detection automatically.
+
+---
+
 ## Problem Statement
 
 IoT devices such as smart cameras, bulbs, TVs, routers, speakers, and other connected appliances are often the weakest link in a network. They commonly suffer from:
@@ -142,7 +159,7 @@ Make sure **Nmap** is installed on the machine running SHURI.
 
 ### 2. Configure your subnet
 
-Find your local subnet.
+Find your local subnet automatically:
 
 #### On Windows:
 bash
@@ -156,7 +173,7 @@ IPv4 Address: 192.168.29.xx
 Use the matching subnet in `backend/shuri_local.py`, for example:
 
 python
-MY_NETWORK = "192.168.29.x/xx"
+MY_NETWORK = "192.168.29.0/24"  # auto-set by start.sh
 
 
 ---
