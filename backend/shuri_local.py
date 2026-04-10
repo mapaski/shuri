@@ -97,7 +97,7 @@ def scan_my_network(network_range):
     return devices
 
 if __name__ == "__main__":
-    MY_NETWORK = "192.168.29.0/24"
+    MY_NETWORK = "10.99.81.0/24"
 
     results = scan_my_network(MY_NETWORK)
 
