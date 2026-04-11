@@ -390,9 +390,10 @@ export function useScanData() {
       }
 
       try {
-        const [devicesRes, alertsRes, statusRes] = await Promise.all([
+        const [devicesRes, alertsRes, statusRes, scanAlertsRes] = await Promise.all([
           fetch(`${API_BASE}/devices`),
-          fetch(`${API_BASE}/alerts`),
+          fetch(`${API_BASE}/status`),
+          fetch(`${API_BASE}/scan-alerts`).catch(() => null),
           fetch(`${API_BASE}/status`),
         ]);
 
@@ -403,10 +404,21 @@ export function useScanData() {
         const devicesJson = await devicesRes.json();
         const alertsJson = await alertsRes.json();
         const statusJson = await statusRes.json();
+        const scanAlertsJson = scanAlertsRes ? await scanAlertsRes.json().catch(() => ({ alerts: [] })) : { alerts: [] };
 
         const devices: Device[] = (devicesJson.devices || []).map(mapBackendDevice);
         const honeypot_alerts: HoneypotAlert[] = alertsJson.alerts || [];
-        const alerts: Alert[] = honeypot_alerts.map(mapHoneypotToAlert);
+        const scan_alerts: Alert[] = (scanAlertsJson.alerts || []).map((a: any) => ({
+          id: a.id,
+          timestamp: a.timestamp,
+          severity: a.severity?.toLowerCase() || "medium",
+          device_name: a.hostname || a.source_ip,
+          ip: a.source_ip,
+          title: a.type?.replace(/_/g, " ") || "Scan Alert",
+          description: a.detail || "",
+          type: "scan",
+        }));
+        const alerts: Alert[] = [...scan_alerts, ...honeypot_alerts.map(mapHoneypotToAlert)];
 
         const totalUp = devices.filter((d) => d.state === "up").length;
         const totalDown = devices.filter((d) => d.state === "down").length;
