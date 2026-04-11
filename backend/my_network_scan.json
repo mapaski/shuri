@@ -1,226 +1,286 @@
 [
   {
-    "ip": "192.168.29.148",
-    "hostname": "Unknown",
+    "ip": "122.0.4.1",
+    "hostname": "ADMIN",
+    "mac": "AA:BB:CC:DD:EE:00",
+    "vendor": "Dell",
+    "device_type": "Linux Server/SBC",
     "state": "up",
+    "os_guess": "Linux 5.x",
     "open_ports": [
       {
         "port": 22,
-        "state": "closed",
         "service": "ssh",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 23,
-        "state": "closed",
-        "service": "telnet",
-        "product": "",
-        "version": ""
-      },
+        "product": "OpenSSH",
+        "version": "8.9"
+      }
+    ],
+    "risk_score": 10,
+    "risk_level": "LOW"
+  },
+  {
+    "ip": "122.0.4.1",
+    "hostname": "gateway.local",
+    "mac": "AA:BB:CC:DD:EE:01",
+    "vendor": "TP-Link",
+    "device_type": "Router/AP",
+    "state": "up",
+    "os_guess": "Linux 2.6.x",
+    "open_ports": [
       {
         "port": 80,
-        "state": "closed",
         "service": "http",
-        "product": "",
-        "version": ""
+        "product": "TP-Link",
+        "version": "1.0"
       },
       {
         "port": 443,
-        "state": "closed",
         "service": "https",
         "product": "",
         "version": ""
       },
       {
-        "port": 554,
-        "state": "closed",
-        "service": "rtsp",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 1883,
-        "state": "closed",
-        "service": "mqtt",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 8080,
-        "state": "closed",
-        "service": "http-proxy",
+        "port": 23,
+        "service": "telnet",
         "product": "",
         "version": ""
       }
     ]
   },
   {
-    "ip": "192.168.29.235",
-    "hostname": "Unknown",
+    "ip": "122.0.4.19",
+    "hostname": "ipcam-lobby",
+    "mac": "AA:BB:CC:DD:EE:02",
+    "vendor": "Hikvision",
+    "device_type": "IP Camera",
     "state": "up",
+    "os_guess": "Linux 3.x",
     "open_ports": [
       {
-        "port": 22,
-        "state": "closed",
-        "service": "ssh",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 23,
-        "state": "closed",
-        "service": "telnet",
-        "product": "",
-        "version": ""
+        "port": 554,
+        "service": "rtsp",
+        "product": "Hikvision",
+        "version": "2.0"
       },
       {
         "port": 80,
-        "state": "closed",
         "service": "http",
         "product": "",
         "version": ""
       },
       {
-        "port": 443,
-        "state": "closed",
-        "service": "https",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 554,
-        "state": "closed",
-        "service": "rtsp",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 1883,
-        "state": "closed",
-        "service": "mqtt",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 8080,
-        "state": "closed",
-        "service": "http-proxy",
+        "port": 23,
+        "service": "telnet",
         "product": "",
         "version": ""
       }
     ]
   },
   {
-    "ip": "192.168.29.246",
-    "hostname": "Unknown",
+    "ip": "122.0.4.54",
+    "hostname": "sensor-temp-a1",
+    "mac": "AA:BB:CC:DD:EE:03",
+    "vendor": "Espressif",
+    "device_type": "IoT Device",
     "state": "up",
+    "os_guess": "Unknown",
     "open_ports": [
       {
-        "port": 22,
-        "state": "closed",
-        "service": "ssh",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 23,
-        "state": "closed",
-        "service": "telnet",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 80,
-        "state": "closed",
-        "service": "http",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 443,
-        "state": "closed",
-        "service": "https",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 554,
-        "state": "closed",
-        "service": "rtsp",
-        "product": "",
-        "version": ""
-      },
-      {
         "port": 1883,
-        "state": "closed",
         "service": "mqtt",
         "product": "",
         "version": ""
       },
       {
-        "port": 8080,
-        "state": "closed",
-        "service": "http-proxy",
+        "port": 80,
+        "service": "http",
         "product": "",
         "version": ""
       }
     ]
   },
   {
-    "ip": "192.168.29.69",
-    "hostname": "Unknown",
+    "ip": "122.0.4.64",
+    "hostname": "smart-tv-lg",
+    "mac": "AA:BB:CC:DD:EE:04",
+    "vendor": "LG Electronics",
+    "device_type": "Smart Device",
     "state": "up",
+    "os_guess": "Linux 4.x",
     "open_ports": [
       {
-        "port": 22,
-        "state": "closed",
-        "service": "ssh",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 23,
-        "state": "closed",
-        "service": "telnet",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 80,
-        "state": "closed",
-        "service": "http",
+        "port": 8080,
+        "service": "http-alt",
         "product": "",
         "version": ""
       },
       {
         "port": 443,
-        "state": "closed",
         "service": "https",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 554,
-        "state": "closed",
-        "service": "rtsp",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 1883,
-        "state": "closed",
-        "service": "mqtt",
-        "product": "",
-        "version": ""
-      },
-      {
-        "port": 8080,
-        "state": "closed",
-        "service": "http-proxy",
         "product": "",
         "version": ""
       }
     ]
+  },
+  {
+    "ip": "122.0.4.115",
+    "hostname": "KSHitija",
+    "mac": "9c:c7:d3:64:db:ac",
+    "vendor": "Intel",
+    "device_type": "Linux Server/SBC",
+    "state": "up",
+    "os_guess": "Linux 5.x",
+    "open_ports": [
+      {
+        "port": 443,
+        "service": "https",
+        "product": "",
+        "version": ""
+      }
+    ],
+    "risk_score": 10,
+    "risk_level": "LOW"
+  },
+  {
+    "ip": "122.0.4.124",
+    "hostname": "Redmi-Note-13",
+    "mac": "62:8a:9d:69:6b:29",
+    "vendor": "Xiaomi",
+    "device_type": "Mobile/Smart Device",
+    "state": "up",
+    "os_guess": "Android",
+    "open_ports": [
+      {
+        "port": 443,
+        "service": "https",
+        "product": "",
+        "version": ""
+      }
+    ],
+    "risk_score": 10,
+    "risk_level": "LOW"
+  },
+  {
+    "ip": "122.0.4.130",
+    "hostname": "mqtt-broker",
+    "mac": "AA:BB:CC:DD:EE:07",
+    "vendor": "Raspberry Pi",
+    "device_type": "IoT Device",
+    "state": "up",
+    "os_guess": "Linux 5.x",
+    "open_ports": [
+      {
+        "port": 1883,
+        "service": "mqtt",
+        "product": "Mosquitto",
+        "version": "1.6"
+      },
+      {
+        "port": 22,
+        "service": "ssh",
+        "product": "OpenSSH",
+        "version": "7.9"
+      }
+    ]
+  },
+  {
+    "ip": "122.0.4.172",
+    "hostname": "printer-hp",
+    "mac": "AA:BB:CC:DD:EE:08",
+    "vendor": "HP",
+    "device_type": "Web-enabled Device",
+    "state": "up",
+    "os_guess": "Unknown",
+    "open_ports": [
+      {
+        "port": 80,
+        "service": "http",
+        "product": "HP Printer",
+        "version": ""
+      },
+      {
+        "port": 443,
+        "service": "https",
+        "product": "",
+        "version": ""
+      }
+    ]
+  },
+  {
+    "ip": "122.0.4.211",
+    "hostname": "ipcam-server",
+    "mac": "AA:BB:CC:DD:EE:10",
+    "vendor": "Dahua",
+    "device_type": "IP Camera",
+    "state": "up",
+    "os_guess": "Linux 3.x",
+    "open_ports": [
+      {
+        "port": 554,
+        "service": "rtsp",
+        "product": "Dahua",
+        "version": "1.0"
+      },
+      {
+        "port": 80,
+        "service": "http",
+        "product": "",
+        "version": ""
+      },
+      {
+        "port": 23,
+        "service": "telnet",
+        "product": "",
+        "version": ""
+      }
+    ]
+  },
+  {
+    "ip": "122.0.4.5",
+    "hostname": "windows-manaswi",
+    "mac": "8c:8b:5b:07:5d:7b",
+    "vendor": "Dell",
+    "device_type": "Windows Machine",
+    "state": "up",
+    "os_guess": "Windows 10",
+    "open_ports": [
+      {
+        "port": 3389,
+        "service": "ms-wbt-server",
+        "product": "Microsoft RDP",
+        "version": ""
+      },
+      {
+        "port": 443,
+        "service": "https",
+        "product": "",
+        "version": ""
+      }
+    ]
+  },
+  {
+    "ip": "122.0.4.7",
+    "hostname": "pop-os",
+    "mac": "c6:d5:25:0a:8c:56",
+    "vendor": "OPPO",
+    "device_type": "Linux Server/SBC",
+    "state": "up",
+    "os_guess": "Linux 5.x",
+    "open_ports": [
+      {
+        "port": 22,
+        "service": "ssh",
+        "product": "OpenSSH",
+        "version": "8.9"
+      },
+      {
+        "port": 443,
+        "service": "https",
+        "product": "",
+        "version": ""
+      }
+    ],
+    "risk_score": 10,
+    "risk_level": "LOW"
   }
 ]

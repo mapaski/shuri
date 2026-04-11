@@ -157,13 +157,17 @@ export interface ScanData {
 }
 
 function mapBackendDevice(device: any, index: number): Device {
-  const openPorts = (device.open_ports || []).filter((p: any) => p.state === "open");
-  const riskScore = openPorts.length * 10;
+  const openPorts = (device.open_ports || []);
+  const riskScore = device.risk_score ?? openPorts.length * 10;
 
-  let riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "LOW";
-  if (riskScore >= 40) riskLevel = "CRITICAL";
-  else if (riskScore >= 25) riskLevel = "HIGH";
-  else if (riskScore >= 10) riskLevel = "MEDIUM";
+  const validLevels = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+  let riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = 
+    validLevels.includes(device.risk_level) ? device.risk_level as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" : "LOW";
+  if (!validLevels.includes(device.risk_level)) {
+    if (riskScore >= 70) riskLevel = "CRITICAL";
+    else if (riskScore >= 45) riskLevel = "HIGH";
+    else if (riskScore >= 20) riskLevel = "MEDIUM";
+  }
 
   return {
     id: device.id || `DEV-${String(index + 1).padStart(3, "0")}`,
@@ -312,11 +316,7 @@ function getBuiltInDemoData(): ScanData {
     devices,
     alerts,
     honeypot_alerts,
-    heatmap: {
-      traffic_by_hour: [],
-      device_traffic: [],
-      daily_intensity: [],
-    },
+    heatmap: generateHeatmapFromDevices(devices),
     report: {
       security_score: 78,
       weekly_alerts: [],
@@ -333,6 +333,54 @@ function getBuiltInDemoData(): ScanData {
   };
 }
 
+
+function generateHeatmapFromDevices(devices: Device[]) {
+  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const highRiskDevices = devices.filter(d => ["CRITICAL","HIGH"].includes(d.risk_level));
+  const seed = devices.length * 7;
+
+  // Generate traffic_by_hour (24 hours)
+  const traffic_by_hour = Array.from({length: 24}, (_, hour) => {
+    const isBusinessHour = hour >= 8 && hour <= 18;
+    const isSpikeHour = [9,13,14].includes(hour);
+    const base = isBusinessHour ? 40 + seed : 5 + seed / 4;
+    const spike = isSpikeHour && highRiskDevices.length > 0 ? highRiskDevices.length * 800 : 0;
+    const inbound = Math.round(base * (0.8 + Math.random() * 0.4) * 100);
+    const outbound = Math.round((base * 0.6 + spike) * (0.8 + Math.random() * 0.4) * 100);
+    return {
+      hour: String(hour).padStart(2,"0"),
+      inbound,
+      outbound,
+      anomalies: isSpikeHour && highRiskDevices.length > 2 ? 1 : 0,
+    };
+  });
+
+  // Generate device_traffic
+  const device_traffic = devices.slice(0,8).map(d => {
+    const factor = d.risk_level === "CRITICAL" ? 8 : d.risk_level === "HIGH" ? 5 : d.risk_level === "MEDIUM" ? 3 : 1;
+    return {
+      device: d.hostname,
+      inbound: Math.round(factor * 800 * (0.7 + Math.random() * 0.6)),
+      outbound: Math.round(factor * 1200 * (0.7 + Math.random() * 0.6)),
+    };
+  });
+
+  // Generate daily_intensity (7 days x 24 hours)
+  const daily_intensity = days.map((day, di) => {
+    const isWeekend = di >= 5;
+    const hours = Array.from({length: 24}, (_, hour) => {
+      const isBusinessHour = hour >= 8 && hour <= 18;
+      if (isWeekend && !isBusinessHour) return 0;
+      const base = isBusinessHour ? 30 : 5;
+      const riskBoost = highRiskDevices.length * 8;
+      const score = Math.round((base + riskBoost) * (0.5 + Math.random() * 0.8));
+      return Math.min(100, score);
+    });
+    return { day, hours };
+  });
+
+  return { traffic_by_hour, device_traffic, daily_intensity };
+}
 export function useScanData() {
   return useQuery<ScanData>({
     queryKey: ["scan-data", DEMO_MODE ? "demo" : "live"],
@@ -377,11 +425,7 @@ export function useScanData() {
           devices,
           alerts,
           honeypot_alerts,
-          heatmap: {
-            traffic_by_hour: [],
-            device_traffic: [],
-            daily_intensity: [],
-          },
+          heatmap: generateHeatmapFromDevices(devices),
           report: {
             security_score: Math.max(0, 100 - devices.length * 5 - alerts.length * 3),
             weekly_alerts: [],

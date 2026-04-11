@@ -4,24 +4,44 @@ import { Wifi, CheckCircle, AlertTriangle, XCircle, Loader2, Info } from "lucide
 
 const SVG_W = 700, SVG_H = 400;
 
-const POSITIONS: Record<string, { x: number; y: number }> = {
-  "DEV-001": { x: 555, y: 80  },
-  "DEV-002": { x: 590, y: 210 },
-  "DEV-003": { x: 340, y: 200 },
-  "DEV-004": { x: 145, y: 85  },
-  "DEV-005": { x: 540, y: 340 },
-  "DEV-006": { x: 110, y: 275 },
-  "DEV-007": { x: 340, y: 355 },
-  "DEV-008": { x: 150, y: 190 },
-};
 
-const CONNECTIONS = [
-  ["DEV-003", "DEV-001"], ["DEV-003", "DEV-002"],
-  ["DEV-003", "DEV-004"], ["DEV-003", "DEV-005"],
-  ["DEV-003", "DEV-006"], ["DEV-003", "DEV-007"],
-  ["DEV-003", "DEV-008"],
-];
-
+function buildLayout(devices: Device[]) {
+  const cx = 350, cy = 200, r = 150;
+  const positions: Record<string, { x: number; y: number }> = {};
+  const connections: [string, string][] = [];
+  if (devices.length === 0) return { positions, connections };
+  // Force ADMIN as hub, fallback to lowest risk
+  const adminDev = devices.find(d => d.hostname === "ADMIN");
+  const sorted = [...devices].sort((a, b) => a.risk_score - b.risk_score);
+  const hub = adminDev || sorted[0];
+  positions[hub.id] = { x: cx, y: cy };
+  const rest = sorted.filter(d => d.id !== hub.id);
+  // Scattered fixed offsets to mix colors
+  const offsets = [
+    {x: -220, y: -140}, {x: 0, y: -170}, {x: 220, y: -140},
+    {x: -260, y: 0},                      {x: 260, y: 0},
+    {x: -220, y: 140},  {x: 0, y: 170},  {x: 220, y: 140},
+    {x: -130, y: -80},  {x: 130, y: -80},
+  ];
+  // Interleave high and low risk for scattered color effect
+  const interleaved = [];
+  const highs = rest.filter(d => d.risk_score >= 45);
+  const lows = rest.filter(d => d.risk_score < 45);
+  const maxLen = Math.max(highs.length, lows.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (lows[i]) interleaved.push(lows[i]);
+    if (highs[i]) interleaved.push(highs[i]);
+  }
+  interleaved.forEach((d, i) => {
+    const off = offsets[i % offsets.length];
+    positions[d.id] = {
+      x: Math.min(680, Math.max(20, cx + off.x)),
+      y: Math.min(380, Math.max(20, cy + off.y)),
+    };
+    connections.push([hub.id, d.id]);
+  });
+  return { positions, connections };
+}
 function blastRadius(d: Device): number {
   const maxCvss = d.cves.length > 0 ? Math.max(...d.cves.map(c => c.cvss_score)) : 0;
   return Math.min(10, Math.round(d.risk_score / 15 + d.open_ports.length + maxCvss / 4));
@@ -74,7 +94,8 @@ export default function NetworkMap() {
     { label: "Critical", value: criticalCount, icon: XCircle, color: "text-red-400" },
   ];
 
-  const maxBR = Math.max(...devices.map(blastRadius));
+  const { positions: POSITIONS, connections: CONNECTIONS } = buildLayout(devices);
+  const maxBR = Math.max(...devices.map(blastRadius), 1);
 
   return (
     <div className="space-y-6">
@@ -144,82 +165,70 @@ export default function NetworkMap() {
                 );
               })}
 
-              {devices.map(device => {
+                            {devices.map(device => {
                 const pos = POSITIONS[device.id];
                 if (!pos) return null;
-
                 const br = blastRadius(device);
-                const nodeR = 14 + (br / maxBR) * 22;
-                const ringR = nodeR + 6;
                 const color = statusColor(device);
                 const isCritical = device.risk_level === "CRITICAL" && device.state === "up";
                 const filterId = isCritical ? "url(#glow-red)" : device.risk_level === "HIGH" ? "url(#glow-orange)" : "";
-
+                const boxSize = 44;
+                const half = boxSize / 2;
+                const iconPaths: Record<string, string> = {
+                  "IP Camera": "M12 4a4 4 0 014 4 4 4 0 01-4 4 4 4 0 01-4-4 4 4 0 014-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4M6 2l1.5 2H9a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h1.5L6 2z",
+                  "Router/AP": "M12 3C6.95 3 3 6.95 3 12s3.95 9 9 9 9-3.95 9-9-3.95-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm-1-11v2H9v2h2v6h2v-6h2v-2h-2V8h-2z",
+                  "IoT Device": "M12 2a10 10 0 0110 10 10 10 0 01-10 10A10 10 0 012 12 10 10 0 0112 2m0 2a8 8 0 00-8 8 8 8 0 008 8 8 8 0 008-8 8 8 0 00-8-8m0 3a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5m0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3z",
+                  "IoT/MQTT Device": "M12 2a10 10 0 0110 10 10 10 0 01-10 10A10 10 0 012 12 10 10 0 0112 2m0 2a8 8 0 00-8 8 8 8 0 008 8 8 8 0 008-8 8 8 0 00-8-8m0 3a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5m0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3z",
+                  "Windows Machine": "M3 5v14h18V5H3zm16 12H5v-8h14v8zm0-10H5V7h14v2z",
+                  "Linux Server/SBC": "M20 3H4a2 2 0 00-2 2v4a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2zm-5 5h-2V6h2v2zm4 0h-2V6h2v2zM4 13h16a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4a2 2 0 012-2zm11 4h2v-2h-2v2zm4 0h-2v-2h2v2z",
+                  "Mobile/Smart Device": "M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z",
+                  "Smart Device": "M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z",
+                  "Web-enabled Device": "M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z",
+                  "Unknown": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z",
+                };
+                const iconPath = iconPaths[device.device_type] || iconPaths["Unknown"];
                 return (
                   <g
                     key={device.id}
                     style={{ cursor: "pointer" }}
                     onClick={() => openDrawer(device)}
+                    filter={filterId}
                   >
-                    {isCritical && (
-                      <circle
-                        cx={pos.x} cy={pos.y} r={ringR}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth="1"
-                        strokeOpacity="0.35"
-                        strokeDasharray="3 3"
-                      >
-                        <animateTransform
-                          attributeName="transform" type="rotate"
-                          from={`0 ${pos.x} ${pos.y}`} to={`360 ${pos.x} ${pos.y}`}
-                          dur="8s" repeatCount="indefinite"
-                        />
-                      </circle>
-                    )}
-
-                    <circle
-                      cx={pos.x} cy={pos.y} r={nodeR}
+                    {/* Rounded square background */}
+                    <rect
+                      x={pos.x - half} y={pos.y - half}
+                      width={boxSize} height={boxSize}
+                      rx={10} ry={10}
                       fill={`${color}18`}
                       stroke={color}
                       strokeWidth={isCritical ? 2 : 1.5}
-                      filter={filterId}
                     />
-
-                    <text
-                      x={pos.x} y={pos.y + 4}
-                      textAnchor="middle"
-                      fontSize={nodeR * 0.55}
-                      fill={color}
-                      fontWeight="bold"
-                    >
-                      {br}
-                    </text>
-
+                    {/* SVG icon */}
+                    <g transform={`translate(${pos.x - 10}, ${pos.y - 10}) scale(0.85)`}>
+                      <path d={iconPath} fill={color} opacity="0.9" />
+                    </g>
+                    {/* Status dot */}
                     <circle
-                      cx={pos.x + nodeR - 4} cy={pos.y - nodeR + 4} r={4}
-                      fill={color}
+                      cx={pos.x + half - 5} cy={pos.y - half + 5} r={5}
+                      fill={device.state === "up" ? color : "#6B7280"}
                       stroke="#111827"
                       strokeWidth="1.5"
                     />
-
+                    {/* Hostname label */}
                     <text
-                      x={pos.x} y={pos.y + nodeR + 13}
+                      x={pos.x} y={pos.y + half + 14}
                       textAnchor="middle"
                       fontSize="9"
-                      fill="#9CA3AF"
-                    >
-                      {device.hostname}
-                    </text>
-
+                      fill="#e5e7eb"
+                      fontWeight="500"
+                    >{device.hostname}</text>
+                    {/* IP label */}
                     <text
-                      x={pos.x} y={pos.y + nodeR + 24}
+                      x={pos.x} y={pos.y + half + 25}
                       textAnchor="middle"
                       fontSize="8"
-                      fill="#6B7280"
-                    >
-                      {device.ip}
-                    </text>
+                      fill="#6b7280"
+                    >{device.ip}</text>
                   </g>
                 );
               })}
