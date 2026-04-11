@@ -20,9 +20,7 @@ const ISSUE_TO_OWASP: Record<string, string> = {
 };
 
 function blastRadius(d: Device): number {
-  const maxCvss = d.cves.length > 0 ? Math.max(...d.cves.map(c => c.cvss_score)) : 0;
-  if ((d as any).blast_radius !== undefined) return (d as any).blast_radius;
-  return Math.min(10, Math.round(d.risk_score / 15 + d.open_ports.length + maxCvss / 4));
+  return (d as any).blast_radius ?? 0;
 }
 
 function riskTileScore(device: Device, owaspId: string): number {
