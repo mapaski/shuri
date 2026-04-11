@@ -11,7 +11,7 @@ def scan_device(ip_address, ports='22,23,80,443,554,1883,8080'):
     print(f"Scanning {ip_address}...")
 
     try:
-        nm.scan(ip_address, ports, arguments='-sV -T4 --unprivileged', timeout=10)
+        nm.scan(ip_address, ports, arguments='-sV -sC -O -T4 --unprivileged', timeout=30)
     except:
         return {'ip': ip_address, 'state': 'down', 'error': 'Scan failed'}
 
@@ -71,7 +71,7 @@ def scan_my_network(network_range):
 
     nm = nmap.PortScanner()
     print("Step 1: Finding active devices (quick scan)...")
-    nm.scan(hosts=network_range, arguments='-sn')
+    nm.scan(hosts=network_range, arguments='-sn -PE -PP')
 
     active_hosts = nm.all_hosts()
     print(f"Found {len(active_hosts)} active devices\n")
@@ -97,7 +97,7 @@ def scan_my_network(network_range):
     return devices
 
 if __name__ == "__main__":
-    MY_NETWORK = "10.99.81.0/24"
+    MY_NETWORK = "122.0.4.0/24"
 
     results = scan_my_network(MY_NETWORK)
 
