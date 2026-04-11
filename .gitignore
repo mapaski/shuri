@@ -61,4 +61,4 @@ __pycache__/
 *.pyc
 
 
-frontend/shuri-dashboard/.env.local
+frontend/shuri-dashboard/.env.localbackend/my_network_scan.json
