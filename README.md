@@ -69,7 +69,7 @@ SHURI also asks:
 - CVE lookup support
 - OWASP IoT Top 10 mapping
 - MITRE ATT&CK mapping
-- Blast radius scoring
+- Blast radius scoring — network trust and reach model, not just port count
 - Honeypot-based suspicious activity detection
 - Flask API for dashboard integration
 - JSON-based scan and alert outputs
@@ -85,7 +85,54 @@ SHURI scans a local subnet and finds active devices, open ports, and available s
 It checks exposed services, performs banner grabbing, identifies weak protocols, and maps findings to known security frameworks.
 
 ### 3. Risk Prioritization
-Instead of only counting vulnerabilities, SHURI calculates a **blast radius score** to estimate how dangerous a device is based on what else it can expose on the network.
+
+Instead of only counting vulnerabilities, SHURI calculates a **blast radius score** that models how much damage a compromised device can cause based on its position in the network trust chain — not just how many ports it has open.
+
+#### Blast Radius Model
+
+The score has two components:
+
+**Network Reach** — how many other devices depend on or trust this device:
+
+| Device Type | Reach Score | Reason |
+|---|---|---|
+| Router / AP | 10 | Routes all traffic — full network pivot |
+| IoT/MQTT Device | 9 | All sensors trust it blindly |
+| IoT Device | 8 | Broadcasts to all subscribers |
+| IP Camera | 7 | Surveillance access + pivot potential |
+| Windows Machine | 5 | High-value target, ransomware vector |
+| Web-enabled Device | 4 | Printer/web UI lateral pivot |
+| Smart Device | 3 | TV, limited trust chain |
+| Linux Server/SBC | 3 | Isolated if patched |
+| Mobile/Smart Device | 2 | Trusted but isolated |
+
+**Trust Exploitation Bonus** — does this device sit in a trust chain others depend on?
+
+| Port | Bonus | Reason |
+|---|---|---|
+| 23 (Telnet) | +3 | Impersonate infrastructure, credentials in plaintext |
+| 1883 (MQTT) | +3 | Inject data all IoT sensors receive |
+| 3389 (RDP) | +2 | Full machine access, ransomware launchpad |
+| 80 / 8080 (HTTP) | +1 | Unencrypted admin panel, easy pivot |
+| 554 (RTSP) | +1 | Surveillance capability |
+
+**Final score** = min(10, reach + trust_bonus)
+
+This means a gateway router or MQTT broker scores 10 not because it has many vulnerabilities, but because every other device on the network trusts it completely. Compromising it means compromising the entire sensor and device layer.
+
+#### Firewall Detection
+
+SHURI reads nmap port states to detect whether a firewall is blocking dangerous ports. If a high-risk port is `filtered` rather than `open`, the blast radius is reduced:
+
+| Blocked Port | Blast Radius Reduction |
+|---|---|
+| Telnet (23) | -3 |
+| MQTT (1883) | -3 |
+| RDP (3389) | -2 |
+| HTTP (80/8080) | -1 |
+| RTSP (554) | -1 |
+
+Each device exposes three firewall fields: `firewall_detected`, `firewall_blocks`, and `firewall_reduction`. The dashboard marks firewalled nodes with a shield indicator. This allows SHURI to distinguish between an IP camera with Telnet exposed (blast radius 10) and one where Telnet is blocked by a firewall (blast radius 7) — a distinction most IoT scanners cannot make.
 
 ### 4. Honeypots
 SHURI runs lightweight fake services such as Telnet, HTTP admin, MQTT, and SSH. If anything interacts with them, the activity is logged as suspicious.
@@ -310,7 +357,8 @@ Triggers a background network scan and refreshes device data.
 - CVE lookup
 - OWASP IoT Top 10 mapping
 - MITRE ATT&CK mapping
-- custom blast radius scoring
+- network trust blast radius model
+- firewall detection via filtered port analysis
 
 ### Frontend
 - React
