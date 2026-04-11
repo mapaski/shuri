@@ -367,9 +367,9 @@ Triggers a background network scan and refreshes device data.
 
 ## Team PARADIGM '26
 
-- **Rushda** — scanning engine, Flask API, local testing, backend integration
-- **Manaswi** — dashboard, honeypots, frontend integration, deployment
-- **Kshitija** — documentation, testing, report, presentation
+- Rushda — scanning engine, Flask API, local testing, backend integration
+- Manaswi — dashboard, honeypots, frontend integration, deployment, local testing
+- Kshitija — documentation, testing, report, presentation
 
 ---
 
