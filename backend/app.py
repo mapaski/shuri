@@ -92,7 +92,27 @@ def enrich_device(device):
     if 3389 in port_nums:  trust_bonus += 2  # RDP = full machine, ransomware vector
 
     reach = REACH.get(device_type, 4)
-    blast_radius = min(10, reach + trust_bonus)
+    raw_blast = reach + trust_bonus
+
+    # Firewall detection — reduce blast radius if dangerous ports are blocked
+    firewall_detected = device.get("firewall_detected", False)
+    firewall_blocks = device.get("firewall_blocks", [])
+
+    # Each blocked high-risk port reduces blast radius
+    BLOCK_REDUCTION = {
+        23:   3,   # blocking telnet = major reduction
+        1883: 3,   # blocking mqtt = major reduction
+        3389: 2,   # blocking rdp = significant reduction
+        80:   1,   # blocking http = minor reduction
+        8080: 1,
+        554:  1,
+    }
+    firewall_reduction = sum(BLOCK_REDUCTION.get(p, 1) for p in firewall_blocks)
+    blast_radius = min(10, max(1, raw_blast - firewall_reduction))
+
+    device["firewall_detected"] = firewall_detected
+    device["firewall_blocks"] = firewall_blocks
+    device["firewall_reduction"] = firewall_reduction
 
     # Risk level
     if device.get("risk_level") in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]:

@@ -2,26 +2,27 @@ import { useScanData, Device } from "@/hooks/use-scan-data";
 import { useDeviceDrawer } from "@/context/device-drawer-context";
 import { Wifi, CheckCircle, AlertTriangle, XCircle, Loader2, Info } from "lucide-react";
 
-const SVG_W = 700, SVG_H = 400;
+const SVG_W = 800, SVG_H = 500;
 
 
 function buildLayout(devices: Device[]) {
-  const cx = 350, cy = 200, r = 150;
+  const cx = 400, cy = 250, r = 160;
   const positions: Record<string, { x: number; y: number }> = {};
   const connections: [string, string][] = [];
   if (devices.length === 0) return { positions, connections };
   // Force ADMIN as hub, fallback to lowest risk
-  const adminDev = devices.find(d => d.hostname === "ADMIN");
+  const adminDev = devices.find(d => d.hostname === "gateway.local");
   const sorted = [...devices].sort((a, b) => a.risk_score - b.risk_score);
   const hub = adminDev || sorted[0];
   positions[hub.id] = { x: cx, y: cy };
   const rest = sorted.filter(d => d.id !== hub.id);
   // Scattered fixed offsets to mix colors
   const offsets = [
-    {x: -220, y: -140}, {x: 0, y: -170}, {x: 220, y: -140},
-    {x: -260, y: 0},                      {x: 260, y: 0},
-    {x: -220, y: 140},  {x: 0, y: 170},  {x: 220, y: 140},
-    {x: -130, y: -80},  {x: 130, y: -80},
+    {x: -280, y: -160}, {x: 0, y: -200}, {x: 280, y: -160},
+    {x: -320, y: 0},                      {x: 320, y: 0},
+    {x: -280, y: 160},  {x: 0, y: 200},  {x: 280, y: 160},
+    {x: -160, y: -100}, {x: 160, y: -100},
+    {x: -160, y: 100},  {x: 160, y: 100},
   ];
   // Interleave high and low risk for scattered color effect
   const interleaved = [];
@@ -214,6 +215,14 @@ export default function NetworkMap() {
                       stroke="#111827"
                       strokeWidth="1.5"
                     />
+                    {/* Firewall shield badge */}
+                    {(device as any).firewall_detected && (
+                      <text
+                        x={pos.x - half + 6} y={pos.y - half + 10}
+                        textAnchor="middle"
+                        fontSize="10"
+                      >🛡</text>
+                    )}
                     {/* Hostname label */}
                     <text
                       x={pos.x} y={pos.y + half + 14}

@@ -11,7 +11,7 @@ def scan_device(ip_address, ports='22,23,80,443,554,1883,8080'):
     print(f"Scanning {ip_address}...")
 
     try:
-        nm.scan(ip_address, ports, arguments='-sV -sC -O -T4 --unprivileged', timeout=30)
+        nm.scan(ip_address, ports, arguments='-sV -T4 --unprivileged', timeout=30)
     except:
         return {'ip': ip_address, 'state': 'down', 'error': 'Scan failed'}
 
