@@ -8,6 +8,7 @@ import DeviceList from "@/pages/DeviceList";
 import Alerts from "@/pages/Alerts";
 import Heatmap from "@/pages/Heatmap";
 import Compliance from "@/pages/Compliance";
+import Remediation from "@/pages/Remediation";
 import NotFound from "@/pages/not-found";
 import { DeviceDrawerProvider } from "@/context/device-drawer-context";
 import DeviceDrawer from "@/components/DeviceDrawer";
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/alerts" component={Alerts} />
         <Route path="/heatmap" component={Heatmap} />
         <Route path="/compliance" component={Compliance} />
+        <Route path="/remediation" component={Remediation} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

@@ -7,6 +7,7 @@ const navItems = [
   { label: "Alerts",       icon: AlertTriangle, href: "/alerts" },
   { label: "Heatmap",      icon: Activity,      href: "/heatmap" },
   { label: "Compliance",   icon: ShieldCheck,   href: "/compliance" },
+  { label: "Remediation", icon: ShieldCheck,   href: "/remediation" },
 ];
 
 export default function Sidebar() {

@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from oui_vendors import lookup_oui, CVE_DETAILS
 from flask_cors import CORS
 import json
 import os
@@ -49,6 +50,82 @@ DEVICE_TYPE_RISK = {
     "Apple Device": 3,
     "Mobile/Smart Device": 3,
     "Unknown": 5,
+}
+
+
+REMEDIATION = {
+    "default_credentials": {
+        "title": "Change Default Credentials",
+        "steps": ["Log into device admin panel", "Navigate to Users or Security settings", "Change default username/password to a strong unique password"],
+        "command": None,
+        "priority": "P0"
+    },
+    "open_telnet": {
+        "title": "Disable Telnet (Port 23)",
+        "steps": ["Access router/device admin panel", "Disable Telnet service", "Use SSH instead if remote access is needed"],
+        "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+        "priority": "P0"
+    },
+    "default_password": {
+        "title": "Change Default Password",
+        "steps": ["Access device admin panel", "Change default password immediately", "Enable 2FA if available"],
+        "command": None,
+        "priority": "P0"
+    },
+    "http_no_auth": {
+        "title": "Secure HTTP Interface",
+        "steps": ["Enable HTTPS on device web interface", "Add authentication to HTTP endpoints", "Block HTTP from external access"],
+        "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+        "priority": "P1"
+    },
+    "unencrypted_http": {
+        "title": "Force HTTPS",
+        "steps": ["Enable TLS/SSL on device", "Redirect all HTTP to HTTPS", "Use strong cipher suites"],
+        "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+        "priority": "P1"
+    },
+    "unencrypted_traffic": {
+        "title": "Enable Traffic Encryption",
+        "steps": ["Enable TLS on all services", "Disable unencrypted protocols", "Use VPN for remote access"],
+        "command": None,
+        "priority": "P1"
+    },
+    "outdated_firmware": {
+        "title": "Update Device Firmware",
+        "steps": ["Check manufacturer website for latest firmware", "Download and verify firmware image", "Apply update via device admin panel"],
+        "command": None,
+        "priority": "P1"
+    },
+    "outdated_software": {
+        "title": "Update Device Software",
+        "steps": ["Run software update check on device", "Apply all available patches", "Schedule regular update checks"],
+        "command": "apt-get update && apt-get upgrade -y",
+        "priority": "P1"
+    },
+    "old_software": {
+        "title": "Replace End-of-Life Software",
+        "steps": ["Identify EOL software versions", "Upgrade to supported versions", "If upgrade not possible, isolate device on separate VLAN"],
+        "command": None,
+        "priority": "P1"
+    },
+    "weak_cipher": {
+        "title": "Update Cipher Configuration",
+        "steps": ["Disable weak ciphers (RC4, DES, 3DES)", "Enable TLS 1.2 minimum", "Use AES-256-GCM or ChaCha20"],
+        "command": None,
+        "priority": "P1"
+    },
+    "upnp_enabled": {
+        "title": "Disable UPnP",
+        "steps": ["Access router admin panel", "Navigate to Advanced > UPnP", "Disable UPnP service"],
+        "command": None,
+        "priority": "P2"
+    },
+    "telnet_open": {
+        "title": "Close Telnet Port",
+        "steps": ["Disable Telnet on device", "Block port 23 at firewall", "Use SSH for secure remote access"],
+        "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+        "priority": "P0"
+    },
 }
 
 def enrich_device(device):
@@ -130,6 +207,30 @@ def enrich_device(device):
     device["id"] = device.get("ip", "").replace(".", "-")
     device["blast_radius"] = blast_radius
 
+    # OUI-based MAC enrichment
+    mac = device.get("mac", "")
+    oui_match = lookup_oui(mac)
+    if oui_match:
+        oui_vendor, oui_device_type, oui_cves = oui_match
+        device["oui_vendor"] = oui_vendor
+        device["oui_device_type"] = oui_device_type
+        # Add OUI-based CVEs not already present
+        existing_cve_ids = {c["cve_id"] for c in device.get("cves", [])}
+        for cve_id in oui_cves:
+            if cve_id not in existing_cve_ids and cve_id in CVE_DETAILS:
+                device["cves"].append({
+                    "cve_id": cve_id,
+                    "cvss_score": CVE_DETAILS[cve_id]["cvss_score"],
+                    "description": CVE_DETAILS[cve_id]["description"],
+                    "source": "OUI-fingerprint"
+                })
+        # Override device_type if OUI match is more specific
+        if device.get("device_type", "Unknown") == "Unknown":
+            device["device_type"] = oui_device_type
+    else:
+        device["oui_vendor"] = None
+        device["oui_device_type"] = None
+
     # Generate OWASP IoT mappings based on open ports and device type
     owasp = []
     issues = []
@@ -187,6 +288,11 @@ def enrich_device(device):
     device["risk_level"] = risk_level
     device["cvss"] = max_cvss
     device["open_ports"] = [p for p in open_ports if p.get("state", "open") != "closed"]
+    device["remediations"] = [
+        {"issue": issue, **REMEDIATION[issue]}
+        for issue in device.get("issues", [])
+        if issue in REMEDIATION
+    ]
     return device
 
 def load_json_file(path, default_value):
@@ -245,6 +351,20 @@ def get_devices():
 def get_alerts():
     data = load_json_file(ALERTS_FILE, [])
     return jsonify({"count": len(data), "alerts": data})
+
+
+@app.route("/scan-alerts", methods=["GET"])
+def get_scan_alerts():
+    try:
+        alerts_file = os.path.join(os.path.dirname(__file__), "scan_alerts.json")
+        if os.path.exists(alerts_file):
+            with open(alerts_file) as f:
+                alerts = json.load(f)
+        else:
+            alerts = []
+        return jsonify({"count": len(alerts), "alerts": alerts})
+    except Exception as e:
+        return jsonify({"error": str(e), "alerts": []}), 500
 
 @app.route("/scan", methods=["POST"])
 def run_scan():
