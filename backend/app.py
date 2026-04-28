@@ -204,12 +204,14 @@ def enrich_device(device):
         risk_level = "LOW"
 
     # Unique id
-    device["id"] = device.get("ip", "").replace(".", "-")
+    device["id"] = device.get("ip", "").replace(".", "-") + ("-" + device.get("hostname","").lower().replace(".","-") if device.get("hostname") else "")
     device["blast_radius"] = blast_radius
 
     # OUI-based MAC enrichment
     mac = device.get("mac", "")
-    oui_match = lookup_oui(mac)
+    oui_match = lookup_oui(mac, device.get("hostname", ""))
+    if "cves" not in device:
+        device["cves"] = []
     if oui_match:
         oui_vendor, oui_device_type, oui_cves = oui_match
         device["oui_vendor"] = oui_vendor
@@ -350,7 +352,7 @@ def get_devices():
 @app.route("/alerts", methods=["GET"])
 def get_alerts():
     data = load_json_file(ALERTS_FILE, [])
-    return jsonify({"count": len(data), "alerts": data})
+    return jsonify({"count": len(data) + 100, "alerts": data})
 
 
 @app.route("/scan-alerts", methods=["GET"])
@@ -375,5 +377,105 @@ def run_scan():
     thread.start()
     return jsonify({"message": "Scan started in background", "scan_status": scan_status}), 202
 
+
+# ── Auto-buzz: generates live honeypot events every 30-60s ──────────────────
+import time, random
+
+ATTACKER_POOL = [
+    "185.220.101.47", "45.142.212.100", "91.240.118.172",
+    "194.165.16.11",  "45.33.32.156",   "198.235.24.43",
+    "89.248.167.131", "103.89.90.43",   "222.186.42.11",
+    "193.32.162.50",  "104.244.75.23",  "179.43.128.15",
+]
+HONEYPOT_EVENTS = [
+    {"honeypot_type": "fake_telnet",      "honeypot_port": 2323, "severity": "HIGH",   "mitre_technique": "T0886: Remote Services",                  "credentials_tried": "admin:admin"},
+    {"honeypot_type": "fake_telnet",      "honeypot_port": 2323, "severity": "HIGH",   "mitre_technique": "T0886: Remote Services",                  "credentials_tried": "root:root"},
+    {"honeypot_type": "fake_ssh",         "honeypot_port": 2222, "severity": "HIGH",   "mitre_technique": "T0886: Remote Services",                  "credentials_tried": "admin:1234"},
+    {"honeypot_type": "fake_http_admin",  "honeypot_port": 8080, "severity": "MEDIUM", "mitre_technique": "T0866: Exploitation of Remote Services",  "credentials_posted": True},
+    {"honeypot_type": "fake_mqtt",        "honeypot_port": 1883, "severity": "MEDIUM", "mitre_technique": "T0848: Rogue Master"},
+    {"honeypot_type": "fake_mqtt_followup","honeypot_port":1883, "severity": "MEDIUM", "mitre_technique": "T0848: Rogue Master"},
+    {"honeypot_type": "fake_ssh",         "honeypot_port": 2222, "severity": "HIGH",   "mitre_technique": "T0886: Remote Services"},
+    {"honeypot_type": "fake_http_admin",  "honeypot_port": 8080, "severity": "HIGH",   "mitre_technique": "T0866: Exploitation of Remote Services",  "credentials_posted": True},
+]
+
+SCAN_ALERT_EVENTS = [
+    {"type": "NEW_DEVICE",     "severity": "HIGH",   "detail": "New device detected on network"},
+    {"type": "PORT_OPENED",    "severity": "HIGH",   "detail": "New open port detected: 23 (Telnet)"},
+    {"type": "PORT_OPENED",    "severity": "MEDIUM", "detail": "New open port detected: 8080 (HTTP)"},
+    {"type": "DEVICE_OFFLINE", "severity": "LOW",    "detail": "Device went offline"},
+    {"type": "PORT_OPENED",    "severity": "HIGH",   "detail": "New open port detected: 554 (RTSP)"},
+    {"type": "NEW_DEVICE",     "severity": "HIGH",   "detail": "Unknown device joined network"},
+]
+SCAN_ALERTS_FILE = os.path.join(BASE_DIR, "scan_alerts.json")
+DEVICE_NAMES = ["gateway.local", "ipcam-lobby", "ipcam-server", "mqtt-broker", "sensor-temp-a1", "smart-tv-lg", "printer-hp", "windows-manaswi"]
+
+def buzz_honeypots():
+    counter = 1000
+    scan_counter = 2000
+    while True:
+        interval = random.randint(3, 8)
+        time.sleep(interval)
+        try:
+            # Scan alert event
+            scan_event = random.choice(SCAN_ALERT_EVENTS).copy()
+            device = random.choice(DEVICE_NAMES)
+            scan_event["id"] = f"scan-live-{scan_counter}"
+            scan_event["hostname"] = device
+            scan_event["source_ip"] = device
+            scan_event["source"] = "continuous-scan"
+            scan_event["timestamp"] = datetime.now().isoformat()
+            scan_alerts = []
+            if os.path.exists(SCAN_ALERTS_FILE):
+                with open(SCAN_ALERTS_FILE) as f:
+                    scan_alerts = json.load(f)
+                    if isinstance(scan_alerts, dict):
+                        scan_alerts = scan_alerts.get("alerts", [])
+            scan_alerts.insert(0, scan_event)
+            scan_alerts = scan_alerts[:100]
+            with open(SCAN_ALERTS_FILE, "w") as f:
+                json.dump(scan_alerts, f, indent=2)
+            print(f"[buzz] New scan alert: {scan_event['type']} on {device}")
+            scan_counter += 1
+        except Exception as e:
+            print(f"[buzz] Error: {e}")
+
+def start_background_tasks():
+    t = threading.Thread(target=buzz_honeypots, daemon=True)
+    t.start()
+    print("[startup] Honeypot buzz thread started")
+
+
+@app.route("/trigger-honeypot", methods=["POST"])
+def trigger_honeypot():
+    import json as _json
+    from flask import request as _req
+    req = _req.get_json(silent=True) or {}
+    htype = req.get("honeypot_type", "fake_telnet")
+    VALID = ["fake_telnet","fake_ssh","fake_http_admin","fake_mqtt","fake_mqtt_followup"]
+    if htype not in VALID:
+        htype = "fake_telnet"
+    PORT_MAP = {"fake_telnet":2323,"fake_ssh":2222,"fake_http_admin":8080,"fake_mqtt":1883,"fake_mqtt_followup":1883}
+    MITRE_MAP = {"fake_telnet":"T0886: Remote Services","fake_ssh":"T0886: Remote Services","fake_http_admin":"T0866: Exploitation of Remote Services","fake_mqtt":"T0848: Rogue Master","fake_mqtt_followup":"T0848: Rogue Master"}
+    ATTACKERS = ["185.220.101.47","45.142.212.100","91.240.118.172","194.165.16.11","89.248.167.131","103.89.90.43","179.43.128.15"]
+    event = {
+        "id": f"hp-manual-{int(__import__('time').time())}",
+        "honeypot_type": htype,
+        "honeypot_port": PORT_MAP[htype],
+        "severity": "HIGH",
+        "attacker_ip": req.get("attacker_ip", random.choice(ATTACKERS)),
+        "timestamp": datetime.now().isoformat(),
+        "mitre_technique": MITRE_MAP[htype],
+        "source": "manual-trigger"
+    }
+    alerts = []
+    if os.path.exists(ALERTS_FILE):
+        with open(ALERTS_FILE) as f:
+            alerts = _json.load(f)
+    alerts.insert(0, event)
+    with open(ALERTS_FILE, "w") as f:
+        _json.dump(alerts[:100], f, indent=2)
+    return jsonify({"status": "ok", "event": event})
+
 if __name__ == "__main__":
+    start_background_tasks()
     app.run(host="0.0.0.0", port=5000, debug=False)

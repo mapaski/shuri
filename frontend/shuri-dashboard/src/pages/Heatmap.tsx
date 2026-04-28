@@ -140,7 +140,7 @@ export default function Heatmap() {
                         <td key={col} className="px-1 py-1 text-center">
                           <button
                             onClick={() => openDrawer(device)}
-                            className="w-full h-10 rounded-md flex items-center justify-center transition-all hover:ring-1 hover:ring-primary/60"
+                            className={`w-full h-10 rounded-md flex items-center justify-center transition-all hover:ring-1 hover:ring-primary/60 ${score >= 90 ? "animate-pulse" : ""}`}
                             style={{ background: tileColor(score), border: `1px solid ${tileBorder(score)}` }}
                             title={`${device.hostname} — ${col}: score ${score}`}
                           >

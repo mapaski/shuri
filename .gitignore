@@ -62,3 +62,13 @@ __pycache__/
 
 
 frontend/shuri-dashboard/.env.localbackend/my_network_scan.json
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/honeypot_alerts.json
+backend/my_network_scan.json
+backend/scan_alerts.json
+frontend/shuri-dashboard/node_modules/
+frontend/shuri-dashboard/dist/
+frontend/shuri-dashboard/.env
+*.bak

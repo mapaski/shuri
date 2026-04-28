@@ -1,0 +1,105 @@
+version: "3.8"
+
+networks:
+  iot-lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+services:
+  gateway:
+    image: python:3.11-alpine
+    container_name: gateway
+    hostname: gateway
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.2
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/gateway.py
+    restart: unless-stopped
+
+  ipcam-lobby:
+    image: python:3.11-alpine
+    container_name: ipcam-lobby
+    hostname: ipcam-lobby
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.3
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/ipcam-lobby.py
+    restart: unless-stopped
+
+  ipcam-server:
+    image: python:3.11-alpine
+    container_name: ipcam-server
+    hostname: ipcam-server
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.4
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/ipcam-server.py
+    restart: unless-stopped
+
+  mqtt-broker:
+    image: python:3.11-alpine
+    container_name: mqtt-broker
+    hostname: mqtt-broker
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.5
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/mqtt-broker.py
+    restart: unless-stopped
+
+  sensor-temp-a1:
+    image: python:3.11-alpine
+    container_name: sensor-temp-a1
+    hostname: sensor-temp-a1
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.6
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/sensor-temp-a1.py
+    restart: unless-stopped
+
+  smart-tv-lg:
+    image: python:3.11-alpine
+    container_name: smart-tv-lg
+    hostname: smart-tv-lg
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.7
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/smart-tv-lg.py
+    restart: unless-stopped
+
+  windows-manaswi:
+    image: python:3.11-alpine
+    container_name: windows-manaswi
+    hostname: windows-manaswi
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.8
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/windows-manaswi.py
+    restart: unless-stopped
+
+  printer-hp:
+    image: python:3.11-alpine
+    container_name: printer-hp
+    hostname: printer-hp
+    networks:
+      iot-lab:
+        ipv4_address: 172.20.0.9
+    volumes:
+      - ./scripts:/scripts
+    command: python3 /scripts/printer-hp.py
+    restart: unless-stopped

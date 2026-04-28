@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen bg-background overflow-hidden">

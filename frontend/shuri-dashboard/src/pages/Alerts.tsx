@@ -1,6 +1,57 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { AlertTriangle, XCircle, Info, CheckCircle, Clock, Shield, Wifi, Lock, Eye, Loader2, Bug, Terminal, Globe, Radio, Cpu } from "lucide-react";
 import { useScanData, Alert, HoneypotAlert } from "@/hooks/use-scan-data";
+
+
+
+
+
+
+
+
+
+function HoneypotTrigger() {
+  const [status, setStatus] = React.useState<"idle"|"firing"|"done">("idle");
+  const [selected, setSelected] = React.useState("fake_telnet");
+  const types = [
+    { id: "fake_telnet", label: "Telnet" },
+    { id: "fake_ssh", label: "SSH" },
+    { id: "fake_http_admin", label: "HTTP Admin" },
+    { id: "fake_mqtt", label: "MQTT" },
+  ];
+  async function fire() {
+    setStatus("firing");
+    try {
+      await fetch("http://127.0.0.1:5000/trigger-honeypot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ honeypot_type: selected }),
+      });
+      setStatus("done");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch { setStatus("idle"); }
+  }
+  return (
+    <div className="bg-red-400/5 border border-red-400/30 rounded-xl p-4 flex items-center gap-4 flex-wrap">
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+        <span className="text-sm font-semibold text-red-400">Manual Honeypot Trigger</span>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {types.map(t => (
+          <button key={t.id} onClick={() => setSelected(t.id)}
+            className={selected === t.id ? "px-3 py-1 rounded-lg text-xs border bg-red-400/20 border-red-400/50 text-red-400" : "px-3 py-1 rounded-lg text-xs border border-border text-muted-foreground"}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <button onClick={fire} disabled={status === "firing"}
+        className="ml-auto px-4 py-2 rounded-lg bg-red-400/10 border border-red-400/40 text-red-400 text-sm font-medium hover:bg-red-400/20 transition-colors disabled:opacity-50">
+        {status === "firing" ? "Firing..." : status === "done" ? "Done!" : "Fire Honeypot"}
+      </button>
+    </div>
+  );
+}
 
 const severityConfig = {
   critical: { icon: XCircle,       color: "text-red-400",    bg: "bg-red-400/10",    border: "border-red-400/40",    label: "Critical" },
@@ -87,7 +138,7 @@ function HoneypotRow({ alert }: { alert: HoneypotAlert }) {
           </div>
           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
             <span className="text-xs text-muted-foreground">Attacker: <span className="font-mono text-foreground">{alert.attacker_ip}</span></span>
-            <span className="text-xs font-mono text-primary">{alert.mitre_technique.split(":")[0]}</span>
+            <span className="text-xs font-mono text-primary">{(alert.mitre_technique || "T0000").split(":")[0]}</span>
             <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock size={10} />{formatTime(alert.timestamp)}</span>
           </div>
         </div>
@@ -111,7 +162,7 @@ function HoneypotRow({ alert }: { alert: HoneypotAlert }) {
           </div>
           <div className="px-3 py-2 rounded bg-primary/10 border border-primary/30">
             <p className="text-xs font-semibold text-primary mb-0.5">MITRE ATT&amp;CK for IoT</p>
-            <p className="text-xs font-mono text-foreground">{alert.mitre_technique}</p>
+            <p className="text-xs font-mono text-foreground">{alert.mitre_technique || "Unknown Technique"}</p>
           </div>
         </div>
       )}
@@ -154,6 +205,7 @@ export default function Alerts() {
 
   return (
     <div className="space-y-5">
+      <HoneypotTrigger />
       <div className="grid grid-cols-4 gap-4">
         {statCards.map(({ label, value, color, bg }) => (
           <div key={label} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
@@ -217,7 +269,7 @@ export default function Alerts() {
           <div className="space-y-3">
             {filteredScan.map(alert => {
               const sev = severityConfig[alert.severity];
-              const st = statusConfig[alert.status];
+              const st = statusConfig[alert.status] ?? statusConfig["active"];
               const SevIcon = sev.icon;
               const TypeIcon = typeIcons[alert.type] ?? Shield;
               const isExp = expandedScan === alert.id;

@@ -67,8 +67,24 @@ CVE_DETAILS = {
     "CVE-2022-27593": {"cvss_score": 7.5, "description": "Unencrypted web interface credential exposure"},
 }
 
-def lookup_oui(mac: str):
-    if not mac or mac == "Unknown":
-        return None
-    prefix = mac.upper()[:8]
-    return OUI_TABLE.get(prefix)
+def lookup_oui(mac: str, hostname: str = ""):
+    if mac and mac != "Unknown":
+        prefix = mac.upper()[:8]
+        result = OUI_TABLE.get(prefix)
+        if result:
+            return result
+    if hostname:
+        return HOSTNAME_FALLBACK.get(hostname.lower())
+    return None
+
+# Docker lab device MACs
+HOSTNAME_FALLBACK = {
+    "ipcam-lobby":    ("Hikvision", "IP Camera",        ["CVE-2021-36260", "CVE-2022-28171"]),
+    "ipcam-server":   ("Hikvision", "IP Camera",        ["CVE-2021-36260", "CVE-2022-28171"]),
+    "gateway.local":  ("TP-Link",   "Router/AP",        ["CVE-2023-1389",  "CVE-2022-42973"]),
+    "mqtt-broker":    ("Raspberry Pi","IoT/MQTT Device", ["CVE-2023-28366"]),
+    "sensor-temp-a1": ("Espressif", "IoT Device",       ["CVE-2019-12586"]),
+    "smart-tv-lg":    ("LG Electronics","Smart Device", ["CVE-2023-6317",  "CVE-2023-6318"]),
+    "printer-hp":     ("HP",        "Web-enabled Device",["CVE-2022-3942", "CVE-2021-39237"]),
+    "windows-manaswi":("Microsoft", "Windows Machine",  ["CVE-2019-0708"]),
+}

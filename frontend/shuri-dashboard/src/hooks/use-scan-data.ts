@@ -111,7 +111,7 @@ export interface HoneypotAlert {
   honeypot_port: number;
   attacker_ip: string;
   severity: "HIGH" | "MEDIUM" | "LOW";
-  mitre_technique: string;
+  mitre_technique?: string;
   credentials_tried?: string;
   credentials_posted?: string;
   path_accessed?: string;
@@ -188,6 +188,7 @@ function mapBackendDevice(device: any, index: number): Device {
     cves: device.cves || [],
     mitre_mappings: device.mitre_mappings || [],
     owasp_mappings: device.owasp_mappings || [],
+    blast_radius: device.blast_radius ?? 0,
   };
 }
 
@@ -207,8 +208,8 @@ function mapHoneypotToAlert(h: HoneypotAlert, index: number): Alert {
         : "low",
     status: "active",
     type: "Intrusion",
-    mitre_id: h.mitre_technique.split(":")[0],
-    mitre_name: h.mitre_technique.split(":").slice(1).join(":").trim(),
+    mitre_id: (h.mitre_technique || "T0000").split(":")[0],
+    mitre_name: (h.mitre_technique || "Unknown").split(":").slice(1).join(":").trim() || "Unknown Technique",
     owasp_category: "I2",
     time: h.timestamp,
     count: 1,
@@ -342,28 +343,25 @@ function generateHeatmapFromDevices(devices: Device[]) {
   // Generate traffic_by_hour (24 hours)
   const traffic_by_hour = Array.from({length: 24}, (_, hour) => {
     const isBusinessHour = hour >= 8 && hour <= 18;
-    const isSpikeHour = [9,13,14].includes(hour);
-    const base = isBusinessHour ? 40 + seed : 5 + seed / 4;
-    const spike = isSpikeHour && highRiskDevices.length > 0 ? highRiskDevices.length * 800 : 0;
-    const inbound = Math.round(base * (0.8 + Math.random() * 0.4) * 100);
-    const outbound = Math.round((base * 0.6 + spike) * (0.8 + Math.random() * 0.4) * 100);
+    const base = devices.length * (isBusinessHour ? 2000 : 500);
+    const riskBoost = devices.filter(d => ["CRITICAL","HIGH"].includes(d.risk_level)).length * 800;
     return {
       hour: String(hour).padStart(2,"0"),
-      inbound,
-      outbound,
-      anomalies: isSpikeHour && highRiskDevices.length > 2 ? 1 : 0,
+      inbound: Math.round((base + riskBoost) * (0.85 + Math.random() * 0.3)),
+      outbound: Math.round(base * 0.6 * (0.85 + Math.random() * 0.3)),
+      anomalies: hour >= 8 && hour <= 18 ? 1 : 0,
+    };
+  });
+  const device_traffic = devices.slice(0,8).map(d => {
+    const br = (d as any).blast_radius || 1;
+    const ports = (d.open_ports || []).length;
+    return {
+      device: d.hostname,
+      inbound: Math.round((br * 500 + ports * 200) * (0.85 + Math.random() * 0.3)),
+      outbound: Math.round((br * 800 + ports * 300) * (0.85 + Math.random() * 0.3)),
     };
   });
 
-  // Generate device_traffic
-  const device_traffic = devices.slice(0,8).map(d => {
-    const factor = d.risk_level === "CRITICAL" ? 8 : d.risk_level === "HIGH" ? 5 : d.risk_level === "MEDIUM" ? 3 : 1;
-    return {
-      device: d.hostname,
-      inbound: Math.round(factor * 800 * (0.7 + Math.random() * 0.6)),
-      outbound: Math.round(factor * 1200 * (0.7 + Math.random() * 0.6)),
-    };
-  });
 
   // Generate daily_intensity (7 days x 24 hours)
   const daily_intensity = days.map((day, di) => {
@@ -392,9 +390,9 @@ export function useScanData() {
       try {
         const [devicesRes, alertsRes, statusRes, scanAlertsRes] = await Promise.all([
           fetch(`${API_BASE}/devices`),
+          fetch(`${API_BASE}/alerts`),
           fetch(`${API_BASE}/status`),
           fetch(`${API_BASE}/scan-alerts`).catch(() => null),
-          fetch(`${API_BASE}/status`),
         ]);
 
         if (!devicesRes.ok || !alertsRes.ok || !statusRes.ok) {
@@ -407,9 +405,10 @@ export function useScanData() {
         const scanAlertsJson = scanAlertsRes ? await scanAlertsRes.json().catch(() => ({ alerts: [] })) : { alerts: [] };
 
         const devices: Device[] = (devicesJson.devices || []).map(mapBackendDevice);
-        const honeypot_alerts: HoneypotAlert[] = alertsJson.alerts || [];
-        const scan_alerts: Alert[] = (scanAlertsJson.alerts || []).map((a: any) => ({
+        const honeypot_alerts: HoneypotAlert[] = (alertsJson.alerts || []).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        const scan_alerts: Alert[] = (scanAlertsJson.alerts || []).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((a: any) => ({
           id: a.id,
+          time: a.timestamp,
           timestamp: a.timestamp,
           severity: a.severity?.toLowerCase() || "medium",
           device_name: a.hostname || a.source_ip,
@@ -452,7 +451,8 @@ export function useScanData() {
             },
           },
         };
-      } catch {
+      } catch (err) {
+        console.error("SHURI live fetch failed:", err);
         const mockRes = await fetch("/mock_data.json");
         if (mockRes.ok) {
           return await mockRes.json();
@@ -461,8 +461,8 @@ export function useScanData() {
         return getBuiltInDemoData();
       }
     },
-    staleTime: 5000,
+    staleTime: 500,
     retry: 1,
-    refetchInterval: DEMO_MODE ? false : 5000,
+    refetchInterval: DEMO_MODE ? false : 1000,
   });
 }

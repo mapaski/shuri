@@ -1,449 +1,1329 @@
 {
   "scan_metadata": {
     "scan_id": "SHURI-2026-0326-001",
-    "timestamp": "2026-03-25T14:30:00Z",
+    "timestamp": "2026-04-12T11:00:00Z",
     "scanner": "SHURI-Scanner v0.1 / python-nmap 0.7.1",
-    "targets": ["scanme.nmap.org", "8.8.8.8", "192.168.1.0/24"],
+    "targets": [
+      "scanme.nmap.org",
+      "8.8.8.8",
+      "192.168.1.0/24"
+    ],
     "ports_scanned": "22,23,53,80,443,554,1883,8080",
-    "total_targets": 8,
-    "total_up": 6,
+    "total_targets": 12,
+    "total_up": 12,
     "total_down": 2
   },
   "devices": [
     {
-      "id": "DEV-001",
-      "ip": "45.33.32.156",
-      "hostname": "scanme.nmap.org",
-      "device_type": "Server",
-      "mac": "N/A (external)",
-      "state": "up",
-      "risk_level": "MEDIUM",
-      "risk_score": 52,
-      "location": "External / Linode",
-      "last_seen": "2026-03-25T14:30:00Z",
-      "firmware": "N/A",
-      "open_ports": [
-        { "port": 22, "state": "open", "service": "ssh", "product": "OpenSSH", "version": "7.4" },
-        { "port": 80, "state": "open", "service": "http", "product": "Apache httpd", "version": "2.4.7" }
-      ],
-      "http_banner": {
-        "server": "Apache/2.4.7",
-        "software": "Apache",
-        "version": "2.4.7",
-        "status_code": 200,
-        "x_powered_by": "Not disclosed"
-      },
-      "cipher_suite": null,
-      "issues": ["outdated_software", "ssh_open"],
-      "cves": [
-        {
-          "cve_id": "CVE-2019-0211",
-          "cvss_score": 9.8,
-          "description": "Privilege escalation vulnerability in Apache HTTP Server prior to 2.4.39",
-          "severity": "CRITICAL",
-          "software": "Apache",
-          "version": "2.4.7"
-        }
-      ],
-      "mitre_mappings": [
-        {
-          "issue": "ssh_open",
-          "technique_id": "T0886",
-          "technique_name": "Remote Services",
-          "tactic": "Initial Access",
-          "description": "Attacker can gain access via SSH if credentials are weak"
-        }
-      ],
-      "owasp_mappings": [
-        {
-          "issue": "outdated_software",
-          "category": "I5",
-          "name": "Use of Insecure or Outdated Components",
-          "description": "Use of deprecated or insecure software components"
-        }
-      ]
-    },
-    {
-      "id": "DEV-002",
-      "ip": "8.8.8.8",
-      "hostname": "dns.google",
-      "device_type": "Server",
-      "mac": "N/A (external)",
-      "state": "up",
-      "risk_level": "LOW",
-      "risk_score": 12,
-      "location": "External / Google",
-      "last_seen": "2026-03-25T14:30:08Z",
-      "firmware": "N/A",
-      "open_ports": [
-        { "port": 53, "state": "open", "service": "domain", "product": "Google DNS", "version": "" },
-        { "port": 443, "state": "open", "service": "https", "product": "sffe", "version": "" }
-      ],
-      "http_banner": {
-        "server": "sffe",
-        "software": "sffe",
-        "version": "Unknown",
-        "status_code": 404,
-        "x_powered_by": "Not disclosed"
-      },
-      "cipher_suite": {
-        "tls_version": "TLSv1.3",
-        "cipher_name": "TLS_AES_256_GCM_SHA384",
-        "key_bits": 256,
-        "weak_cipher": false,
-        "weak_tls": false,
-        "risk_flags": [],
-        "risk_level": "LOW"
-      },
-      "issues": [],
+      "blast_radius": 3,
       "cves": [],
-      "mitre_mappings": [],
-      "owasp_mappings": []
+      "cvss": 3.0,
+      "device_type": "Linux Server/SBC",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "ADMIN",
+      "id": "122-0-4-1",
+      "ip": "122.0.4.1",
+      "issues": [],
+      "mac": "AA:BB:CC:DD:EE:00",
+      "open_ports": [
+        {
+          "port": 22,
+          "product": "OpenSSH",
+          "service": "ssh",
+          "version": "8.9"
+        }
+      ],
+      "os_guess": "Linux 5.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [],
+      "remediations": [],
+      "risk_level": "LOW",
+      "risk_score": 29,
+      "state": "up",
+      "vendor": "Dell"
     },
     {
-      "id": "DEV-003",
-      "ip": "192.168.1.1",
-      "hostname": "gateway.local",
-      "device_type": "Gateway",
-      "mac": "AA:BB:CC:00:11:22",
-      "state": "up",
-      "risk_level": "CRITICAL",
-      "risk_score": 91,
-      "location": "NOC",
-      "last_seen": "2026-03-25T14:31:02Z",
-      "firmware": "v1.0.2 (2019)",
-      "open_ports": [
-        { "port": 23, "state": "open", "service": "telnet", "product": "Busybox Telnetd", "version": "" },
-        { "port": 80, "state": "open", "service": "http", "product": "lighttpd", "version": "1.4.35" },
-        { "port": 443, "state": "open", "service": "https", "product": "lighttpd", "version": "1.4.35" }
-      ],
-      "http_banner": {
-        "server": "lighttpd/1.4.35",
-        "software": "lighttpd",
-        "version": "1.4.35",
-        "status_code": 200,
-        "x_powered_by": "Not disclosed"
-      },
-      "cipher_suite": {
-        "tls_version": "TLSv1.1",
-        "cipher_name": "AES128-SHA",
-        "key_bits": 128,
-        "weak_cipher": false,
-        "weak_tls": true,
-        "risk_flags": ["TLS_OUTDATED"],
-        "risk_level": "HIGH"
-      },
-      "issues": ["open_telnet", "default_credentials", "outdated_firmware", "weak_cipher"],
+      "blast_radius": 10,
       "cves": [
         {
-          "cve_id": "CVE-2018-19052",
+          "cve_id": "CVE-2023-1389",
+          "cvss_score": 9.8,
+          "description": "Default credentials via telnet"
+        },
+        {
+          "cve_id": "CVE-2022-27593",
           "cvss_score": 7.5,
-          "description": "Buffer overflow in HTTP header parsing in lighttpd 1.4.x before 1.4.52",
-          "severity": "HIGH",
-          "software": "lighttpd",
-          "version": "1.4.35"
+          "description": "Unencrypted web interface"
         }
       ],
-      "mitre_mappings": [
-        {
-          "issue": "open_telnet",
-          "technique_id": "T0886",
-          "technique_name": "Remote Services",
-          "tactic": "Initial Access",
-          "description": "Attacker gains access via unencrypted Telnet service"
-        },
-        {
-          "issue": "default_credentials",
-          "technique_id": "T0812",
-          "technique_name": "Default Credentials",
-          "tactic": "Initial Access",
-          "description": "Attacker uses factory default username/password"
-        },
-        {
-          "issue": "weak_cipher",
-          "technique_id": "T0830",
-          "technique_name": "Man in the Middle",
-          "tactic": "Collection",
-          "description": "Outdated TLS 1.1 allows traffic interception and decryption"
-        }
+      "cvss": 9.0,
+      "device_type": "Router/AP",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "gateway.local",
+      "id": "122-0-4-1",
+      "ip": "122.0.4.1",
+      "issues": [
+        "default_credentials",
+        "open_telnet",
+        "http_no_auth",
+        "unencrypted_http",
+        "unencrypted_traffic"
       ],
-      "owasp_mappings": [
-        {
-          "issue": "open_telnet",
-          "category": "I2",
-          "name": "Insecure Network Services",
-          "description": "Unnecessary or insecure network services running"
-        },
-        {
-          "issue": "default_credentials",
-          "category": "I1",
-          "name": "Weak, Guessable, or Hardcoded Passwords",
-          "description": "Use of easily guessed or hardcoded passwords"
-        },
-        {
-          "issue": "weak_cipher",
-          "category": "I7",
-          "name": "Insecure Data Transfer and Storage",
-          "description": "Use of weak encryption algorithms"
-        },
-        {
-          "issue": "outdated_firmware",
-          "category": "I4",
-          "name": "Lack of Secure Update Mechanism",
-          "description": "Device running firmware from 2019 with no update path"
-        }
-      ]
-    },
-    {
-      "id": "DEV-004",
-      "ip": "192.168.1.21",
-      "hostname": "ipcam-lobby",
-      "device_type": "Camera",
-      "mac": "AA:BB:CC:11:22:33",
-      "state": "up",
-      "risk_level": "HIGH",
-      "risk_score": 74,
-      "location": "Building A — Lobby",
-      "last_seen": "2026-03-25T14:31:10Z",
-      "firmware": "v2.1.4 (2021)",
+      "mac": "AA:BB:CC:DD:EE:01",
       "open_ports": [
-        { "port": 80, "state": "open", "service": "http", "product": "GoAhead WebServer", "version": "2.5.0" },
-        { "port": 554, "state": "open", "service": "rtsp", "product": "H264DVR rtsp", "version": "" },
-        { "port": 8080, "state": "open", "service": "http-proxy", "product": "Boa httpd", "version": "0.94.14" }
-      ],
-      "http_banner": {
-        "server": "GoAhead-Webs/2.5.0",
-        "software": "GoAhead-Webs",
-        "version": "2.5.0",
-        "status_code": 200,
-        "x_powered_by": "Not disclosed"
-      },
-      "cipher_suite": null,
-      "issues": ["unencrypted_http", "upnp_enabled", "outdated_firmware"],
-      "cves": [
         {
-          "cve_id": "CVE-2021-33544",
-          "cvss_score": 9.8,
-          "description": "Multiple stack-based buffer overflows in GoAhead Web Server 2.5.0 allow remote code execution",
-          "severity": "CRITICAL",
-          "software": "GoAhead-Webs",
-          "version": "2.5.0"
-        }
-      ],
-      "mitre_mappings": [
-        {
-          "issue": "unencrypted_http",
-          "technique_id": "T0830",
-          "technique_name": "Man in the Middle",
-          "tactic": "Collection",
-          "description": "HTTP traffic can be intercepted and modified"
+          "port": 80,
+          "product": "TP-Link",
+          "service": "http",
+          "version": "1.0"
         },
         {
-          "issue": "upnp_enabled",
-          "technique_id": "T0846",
-          "technique_name": "Remote System Discovery",
-          "tactic": "Discovery",
-          "description": "UPnP reveals device info to network attackers"
+          "port": 443,
+          "product": "",
+          "service": "https",
+          "version": ""
+        },
+        {
+          "port": 23,
+          "product": "",
+          "service": "telnet",
+          "version": ""
         }
       ],
+      "os_guess": "Linux 2.6.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
       "owasp_mappings": [
         {
-          "issue": "unencrypted_http",
-          "category": "I7",
-          "name": "Insecure Data Transfer and Storage",
-          "description": "HTTP traffic can be intercepted and modified"
+          "id": "I1",
+          "name": "Weak/Hardcoded Passwords",
+          "severity": "CRITICAL"
         },
         {
-          "issue": "upnp_enabled",
-          "category": "I9",
-          "name": "Insecure Default Settings",
-          "description": "UPnP enabled by default reveals device information"
+          "id": "I2",
+          "name": "Insecure Network Services",
+          "severity": "CRITICAL"
+        },
+        {
+          "id": "I3",
+          "name": "Insecure Ecosystem Interfaces",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I7",
+          "name": "Insecure Data Transfer",
+          "severity": "HIGH"
         }
-      ]
-    },
-    {
-      "id": "DEV-005",
-      "ip": "192.168.1.22",
-      "hostname": "ipcam-server",
-      "device_type": "Camera",
-      "mac": "AA:BB:CC:11:22:44",
-      "state": "up",
+      ],
+      "remediations": [
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+          "issue": "open_telnet",
+          "priority": "P0",
+          "steps": [
+            "Access router/device admin panel",
+            "Disable Telnet service",
+            "Use SSH instead if remote access is needed"
+          ],
+          "title": "Disable Telnet (Port 23)"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "unencrypted_traffic",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS on all services",
+            "Disable unencrypted protocols",
+            "Use VPN for remote access"
+          ],
+          "title": "Enable Traffic Encryption"
+        }
+      ],
       "risk_level": "CRITICAL",
-      "risk_score": 95,
-      "location": "Server Room",
-      "last_seen": "2026-03-25T14:31:18Z",
-      "firmware": "v2.0.1 (2020)",
-      "open_ports": [
-        { "port": 23, "state": "open", "service": "telnet", "product": "", "version": "" },
-        { "port": 80, "state": "open", "service": "http", "product": "GoAhead WebServer", "version": "2.5.0" },
-        { "port": 554, "state": "open", "service": "rtsp", "product": "H264DVR rtsp", "version": "" }
-      ],
-      "http_banner": {
-        "server": "GoAhead-Webs/2.5.0",
-        "software": "GoAhead-Webs",
-        "version": "2.5.0",
-        "status_code": 200,
-        "x_powered_by": "Not disclosed"
-      },
-      "cipher_suite": null,
-      "issues": ["open_telnet", "default_credentials", "unencrypted_http", "outdated_firmware"],
+      "risk_score": 83,
+      "state": "up",
+      "vendor": "TP-Link"
+    },
+    {
+      "blast_radius": 10,
       "cves": [
         {
-          "cve_id": "CVE-2021-33544",
+          "cve_id": "CVE-2023-1389",
           "cvss_score": 9.8,
-          "description": "Multiple stack-based buffer overflows in GoAhead Web Server 2.5.0",
-          "severity": "CRITICAL",
-          "software": "GoAhead-Webs",
-          "version": "2.5.0"
+          "description": "Default credentials via telnet"
         },
         {
-          "cve_id": "CVE-2023-4521",
-          "cvss_score": 8.1,
-          "description": "Authentication bypass via Telnet in firmware 2.0.x IP cameras",
-          "severity": "HIGH",
-          "software": "H264DVR Firmware",
-          "version": "2.0.1"
+          "cve_id": "CVE-2022-27593",
+          "cvss_score": 7.5,
+          "description": "Unencrypted web interface"
+        },
+        {
+          "cve_id": "CVE-2021-36260",
+          "cvss_score": 9.8,
+          "description": "Camera remote code execution via RTSP"
         }
       ],
-      "mitre_mappings": [
+      "cvss": 9.0,
+      "device_type": "IP Camera",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "ipcam-lobby",
+      "id": "122-0-4-19",
+      "ip": "122.0.4.19",
+      "issues": [
+        "default_credentials",
+        "open_telnet",
+        "http_no_auth",
+        "unencrypted_http",
+        "unencrypted_traffic",
+        "http_no_auth",
+        "unencrypted_http",
+        "outdated_firmware",
+        "upnp_enabled",
+        "default_credentials"
+      ],
+      "mac": "AA:BB:CC:DD:EE:02",
+      "open_ports": [
         {
-          "issue": "open_telnet",
-          "technique_id": "T0886",
-          "technique_name": "Remote Services",
-          "tactic": "Initial Access",
-          "description": "Attacker gains initial access via Telnet"
+          "port": 554,
+          "product": "Hikvision",
+          "service": "rtsp",
+          "version": "2.0"
         },
         {
-          "issue": "default_credentials",
-          "technique_id": "T0812",
-          "technique_name": "Default Credentials",
-          "tactic": "Initial Access",
-          "description": "Camera uses factory default admin/admin credentials"
+          "port": 80,
+          "product": "",
+          "service": "http",
+          "version": ""
         },
         {
-          "issue": "outdated_firmware",
-          "technique_id": "T0866",
-          "technique_name": "Exploitation of Remote Services",
-          "tactic": "Lateral Movement",
-          "description": "Known CVE in firmware enables remote exploitation"
+          "port": 23,
+          "product": "",
+          "service": "telnet",
+          "version": ""
         }
       ],
+      "os_guess": "Linux 3.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
       "owasp_mappings": [
         {
-          "issue": "open_telnet",
-          "category": "I2",
+          "id": "I1",
+          "name": "Weak/Hardcoded Passwords",
+          "severity": "CRITICAL"
+        },
+        {
+          "id": "I2",
           "name": "Insecure Network Services",
-          "description": "Telnet running with no authentication"
+          "severity": "CRITICAL"
         },
         {
-          "issue": "default_credentials",
-          "category": "I1",
-          "name": "Weak, Guessable, or Hardcoded Passwords",
-          "description": "Factory default credentials unchanged"
+          "id": "I3",
+          "name": "Insecure Ecosystem Interfaces",
+          "severity": "HIGH"
         },
         {
-          "issue": "outdated_firmware",
-          "category": "I4",
+          "id": "I7",
+          "name": "Insecure Data Transfer",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I4",
           "name": "Lack of Secure Update Mechanism",
-          "description": "No automatic update mechanism, running vulnerable firmware"
-        }
-      ]
-    },
-    {
-      "id": "DEV-006",
-      "ip": "192.168.1.31",
-      "hostname": "sensor-temp-a1",
-      "device_type": "Sensor",
-      "mac": "AA:BB:CC:33:44:55",
-      "state": "up",
-      "risk_level": "LOW",
-      "risk_score": 18,
-      "location": "Floor 1",
-      "last_seen": "2026-03-25T14:31:22Z",
-      "firmware": "v1.0.3 (2023)",
-      "open_ports": [
-        { "port": 1883, "state": "open", "service": "mqtt", "product": "Mosquitto MQTT", "version": "2.0.15" }
-      ],
-      "http_banner": null,
-      "cipher_suite": null,
-      "issues": [],
-      "cves": [],
-      "mitre_mappings": [],
-      "owasp_mappings": []
-    },
-    {
-      "id": "DEV-007",
-      "ip": "192.168.1.50",
-      "hostname": "mobile-admin-01",
-      "device_type": "Mobile",
-      "mac": "AA:BB:CC:55:66:77",
-      "state": "up",
-      "risk_level": "MEDIUM",
-      "risk_score": 41,
-      "location": "Mobile",
-      "last_seen": "2026-03-25T14:30:55Z",
-      "firmware": "Android 14",
-      "open_ports": [
-        { "port": 80, "state": "open", "service": "http", "product": "", "version": "" }
-      ],
-      "http_banner": {
-        "server": "Unknown",
-        "software": "Unknown",
-        "version": "Unknown",
-        "status_code": 200,
-        "x_powered_by": "Not disclosed"
-      },
-      "cipher_suite": null,
-      "issues": ["unencrypted_http"],
-      "cves": [],
-      "mitre_mappings": [
+          "severity": "MEDIUM"
+        },
         {
-          "issue": "unencrypted_http",
-          "technique_id": "T0830",
-          "technique_name": "Man in the Middle",
-          "tactic": "Collection",
-          "description": "Unencrypted HTTP allows traffic interception"
+          "id": "I9",
+          "name": "Insecure Default Settings",
+          "severity": "HIGH"
         }
       ],
+      "remediations": [
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+          "issue": "open_telnet",
+          "priority": "P0",
+          "steps": [
+            "Access router/device admin panel",
+            "Disable Telnet service",
+            "Use SSH instead if remote access is needed"
+          ],
+          "title": "Disable Telnet (Port 23)"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "unencrypted_traffic",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS on all services",
+            "Disable unencrypted protocols",
+            "Use VPN for remote access"
+          ],
+          "title": "Enable Traffic Encryption"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "outdated_firmware",
+          "priority": "P1",
+          "steps": [
+            "Check manufacturer website for latest firmware",
+            "Download and verify firmware image",
+            "Apply update via device admin panel"
+          ],
+          "title": "Update Device Firmware"
+        },
+        {
+          "command": null,
+          "issue": "upnp_enabled",
+          "priority": "P2",
+          "steps": [
+            "Access router admin panel",
+            "Navigate to Advanced > UPnP",
+            "Disable UPnP service"
+          ],
+          "title": "Disable UPnP"
+        },
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        }
+      ],
+      "risk_level": "CRITICAL",
+      "risk_score": 100,
+      "state": "up",
+      "vendor": "Hikvision"
+    },
+    {
+      "blast_radius": 10,
+      "cves": [
+        {
+          "cve_id": "CVE-2022-27593",
+          "cvss_score": 7.5,
+          "description": "Unencrypted web interface"
+        },
+        {
+          "cve_id": "CVE-2023-28366",
+          "cvss_score": 7.5,
+          "description": "MQTT broker allows unauthenticated access"
+        }
+      ],
+      "cvss": 8.5,
+      "device_type": "IoT Device",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "sensor-temp-a1",
+      "id": "122-0-4-54",
+      "ip": "122.0.4.54",
+      "issues": [
+        "http_no_auth",
+        "unencrypted_http",
+        "unencrypted_traffic",
+        "default_password",
+        "telnet_open",
+        "outdated_firmware",
+        "upnp_enabled",
+        "default_credentials",
+        "outdated_software",
+        "old_software"
+      ],
+      "mac": "AA:BB:CC:DD:EE:03",
+      "open_ports": [
+        {
+          "port": 1883,
+          "product": "",
+          "service": "mqtt",
+          "version": ""
+        },
+        {
+          "port": 80,
+          "product": "",
+          "service": "http",
+          "version": ""
+        }
+      ],
+      "os_guess": "Unknown",
+      "oui_device_type": null,
+      "oui_vendor": null,
       "owasp_mappings": [
         {
-          "issue": "unencrypted_http",
-          "category": "I7",
-          "name": "Insecure Data Transfer and Storage",
-          "description": "Device communicating over plain HTTP"
+          "id": "I3",
+          "name": "Insecure Ecosystem Interfaces",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I7",
+          "name": "Insecure Data Transfer",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I1",
+          "name": "Weak/Hardcoded Passwords",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I2",
+          "name": "Insecure Network Services",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I4",
+          "name": "Lack of Secure Update Mechanism",
+          "severity": "MEDIUM"
+        },
+        {
+          "id": "I9",
+          "name": "Insecure Default Settings",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I5",
+          "name": "Insecure or Outdated Components",
+          "severity": "MEDIUM"
         }
-      ]
+      ],
+      "remediations": [
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "unencrypted_traffic",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS on all services",
+            "Disable unencrypted protocols",
+            "Use VPN for remote access"
+          ],
+          "title": "Enable Traffic Encryption"
+        },
+        {
+          "command": null,
+          "issue": "default_password",
+          "priority": "P0",
+          "steps": [
+            "Access device admin panel",
+            "Change default password immediately",
+            "Enable 2FA if available"
+          ],
+          "title": "Change Default Password"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+          "issue": "telnet_open",
+          "priority": "P0",
+          "steps": [
+            "Disable Telnet on device",
+            "Block port 23 at firewall",
+            "Use SSH for secure remote access"
+          ],
+          "title": "Close Telnet Port"
+        },
+        {
+          "command": null,
+          "issue": "outdated_firmware",
+          "priority": "P1",
+          "steps": [
+            "Check manufacturer website for latest firmware",
+            "Download and verify firmware image",
+            "Apply update via device admin panel"
+          ],
+          "title": "Update Device Firmware"
+        },
+        {
+          "command": null,
+          "issue": "upnp_enabled",
+          "priority": "P2",
+          "steps": [
+            "Access router admin panel",
+            "Navigate to Advanced > UPnP",
+            "Disable UPnP service"
+          ],
+          "title": "Disable UPnP"
+        },
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        },
+        {
+          "command": "apt-get update && apt-get upgrade -y",
+          "issue": "outdated_software",
+          "priority": "P1",
+          "steps": [
+            "Run software update check on device",
+            "Apply all available patches",
+            "Schedule regular update checks"
+          ],
+          "title": "Update Device Software"
+        },
+        {
+          "command": null,
+          "issue": "old_software",
+          "priority": "P1",
+          "steps": [
+            "Identify EOL software versions",
+            "Upgrade to supported versions",
+            "If upgrade not possible, isolate device on separate VLAN"
+          ],
+          "title": "Replace End-of-Life Software"
+        }
+      ],
+      "risk_level": "CRITICAL",
+      "risk_score": 75,
+      "state": "up",
+      "vendor": "Espressif"
     },
     {
-      "id": "DEV-008",
-      "ip": "192.168.1.10",
-      "hostname": "mqtt-broker",
-      "device_type": "Server",
-      "mac": "AA:BB:CC:00:22:33",
-      "state": "up",
-      "risk_level": "LOW",
-      "risk_score": 15,
-      "location": "Server Room",
-      "last_seen": "2026-03-25T14:31:05Z",
-      "firmware": "Mosquitto 2.0.18",
-      "open_ports": [
-        { "port": 1883, "state": "open", "service": "mqtt", "product": "Mosquitto MQTT", "version": "2.0.18" },
-        { "port": 8883, "state": "open", "service": "mqtt-ssl", "product": "Mosquitto MQTT", "version": "2.0.18" }
+      "blast_radius": 4,
+      "cves": [
+        {
+          "cve_id": "CVE-2022-27593",
+          "cvss_score": 7.5,
+          "description": "Unencrypted web interface"
+        }
       ],
-      "http_banner": null,
-      "cipher_suite": {
-        "tls_version": "TLSv1.3",
-        "cipher_name": "TLS_AES_256_GCM_SHA384",
-        "key_bits": 256,
-        "weak_cipher": false,
-        "weak_tls": false,
-        "risk_flags": [],
-        "risk_level": "LOW"
-      },
-      "issues": [],
+      "cvss": 6.0,
+      "device_type": "Smart Device",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "smart-tv-lg",
+      "id": "122-0-4-64",
+      "ip": "122.0.4.64",
+      "issues": [
+        "http_no_auth",
+        "unencrypted_http",
+        "unencrypted_traffic"
+      ],
+      "mac": "AA:BB:CC:DD:EE:04",
+      "open_ports": [
+        {
+          "port": 8080,
+          "product": "",
+          "service": "http-alt",
+          "version": ""
+        },
+        {
+          "port": 443,
+          "product": "",
+          "service": "https",
+          "version": ""
+        }
+      ],
+      "os_guess": "Linux 4.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [
+        {
+          "id": "I3",
+          "name": "Insecure Ecosystem Interfaces",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I7",
+          "name": "Insecure Data Transfer",
+          "severity": "HIGH"
+        }
+      ],
+      "remediations": [
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "unencrypted_traffic",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS on all services",
+            "Disable unencrypted protocols",
+            "Use VPN for remote access"
+          ],
+          "title": "Enable Traffic Encryption"
+        }
+      ],
+      "risk_level": "HIGH",
+      "risk_score": 49,
+      "state": "up",
+      "vendor": "LG Electronics"
+    },
+    {
+      "blast_radius": 3,
       "cves": [],
-      "mitre_mappings": [],
-      "owasp_mappings": []
+      "cvss": 2.0,
+      "device_type": "Linux Server/SBC",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "KSHitija",
+      "id": "122-0-4-115",
+      "ip": "122.0.4.115",
+      "issues": [],
+      "mac": "9c:c7:d3:64:db:ac",
+      "open_ports": [
+        {
+          "port": 443,
+          "product": "",
+          "service": "https",
+          "version": ""
+        }
+      ],
+      "os_guess": "Linux 5.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [],
+      "remediations": [],
+      "risk_level": "LOW",
+      "risk_score": 26,
+      "state": "up",
+      "vendor": "Intel"
+    },
+    {
+      "blast_radius": 2,
+      "cves": [],
+      "cvss": 2.0,
+      "device_type": "Mobile/Smart Device",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "Redmi-Note-13",
+      "id": "122-0-4-124",
+      "ip": "122.0.4.124",
+      "issues": [],
+      "mac": "62:8a:9d:69:6b:29",
+      "open_ports": [
+        {
+          "port": 443,
+          "product": "",
+          "service": "https",
+          "version": ""
+        }
+      ],
+      "os_guess": "Android",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [],
+      "remediations": [],
+      "risk_level": "LOW",
+      "risk_score": 21,
+      "state": "up",
+      "vendor": "Xiaomi"
+    },
+    {
+      "blast_radius": 10,
+      "cves": [
+        {
+          "cve_id": "CVE-2023-28366",
+          "cvss_score": 7.5,
+          "description": "MQTT broker allows unauthenticated access"
+        }
+      ],
+      "cvss": 8.5,
+      "device_type": "IoT Device",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "mqtt-broker",
+      "id": "122-0-4-130",
+      "ip": "122.0.4.130",
+      "issues": [
+        "default_password",
+        "telnet_open",
+        "outdated_firmware",
+        "upnp_enabled",
+        "default_credentials"
+      ],
+      "mac": "AA:BB:CC:DD:EE:07",
+      "open_ports": [
+        {
+          "port": 1883,
+          "product": "Mosquitto",
+          "service": "mqtt",
+          "version": "1.6"
+        },
+        {
+          "port": 22,
+          "product": "OpenSSH",
+          "service": "ssh",
+          "version": "7.9"
+        }
+      ],
+      "os_guess": "Linux 5.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [
+        {
+          "id": "I1",
+          "name": "Weak/Hardcoded Passwords",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I2",
+          "name": "Insecure Network Services",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I4",
+          "name": "Lack of Secure Update Mechanism",
+          "severity": "MEDIUM"
+        },
+        {
+          "id": "I9",
+          "name": "Insecure Default Settings",
+          "severity": "HIGH"
+        }
+      ],
+      "remediations": [
+        {
+          "command": null,
+          "issue": "default_password",
+          "priority": "P0",
+          "steps": [
+            "Access device admin panel",
+            "Change default password immediately",
+            "Enable 2FA if available"
+          ],
+          "title": "Change Default Password"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+          "issue": "telnet_open",
+          "priority": "P0",
+          "steps": [
+            "Disable Telnet on device",
+            "Block port 23 at firewall",
+            "Use SSH for secure remote access"
+          ],
+          "title": "Close Telnet Port"
+        },
+        {
+          "command": null,
+          "issue": "outdated_firmware",
+          "priority": "P1",
+          "steps": [
+            "Check manufacturer website for latest firmware",
+            "Download and verify firmware image",
+            "Apply update via device admin panel"
+          ],
+          "title": "Update Device Firmware"
+        },
+        {
+          "command": null,
+          "issue": "upnp_enabled",
+          "priority": "P2",
+          "steps": [
+            "Access router admin panel",
+            "Navigate to Advanced > UPnP",
+            "Disable UPnP service"
+          ],
+          "title": "Disable UPnP"
+        },
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        }
+      ],
+      "risk_level": "HIGH",
+      "risk_score": 69,
+      "state": "up",
+      "vendor": "Raspberry Pi"
+    },
+    {
+      "blast_radius": 5,
+      "cves": [
+        {
+          "cve_id": "CVE-2022-27593",
+          "cvss_score": 7.5,
+          "description": "Unencrypted web interface"
+        }
+      ],
+      "cvss": 5.0,
+      "device_type": "Web-enabled Device",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "printer-hp",
+      "id": "122-0-4-172",
+      "ip": "122.0.4.172",
+      "issues": [
+        "http_no_auth",
+        "unencrypted_http",
+        "unencrypted_traffic",
+        "outdated_software",
+        "old_software"
+      ],
+      "mac": "AA:BB:CC:DD:EE:08",
+      "open_ports": [
+        {
+          "port": 80,
+          "product": "HP Printer",
+          "service": "http",
+          "version": ""
+        },
+        {
+          "port": 443,
+          "product": "",
+          "service": "https",
+          "version": ""
+        }
+      ],
+      "os_guess": "Unknown",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [
+        {
+          "id": "I3",
+          "name": "Insecure Ecosystem Interfaces",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I7",
+          "name": "Insecure Data Transfer",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I5",
+          "name": "Insecure or Outdated Components",
+          "severity": "MEDIUM"
+        }
+      ],
+      "remediations": [
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "unencrypted_traffic",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS on all services",
+            "Disable unencrypted protocols",
+            "Use VPN for remote access"
+          ],
+          "title": "Enable Traffic Encryption"
+        },
+        {
+          "command": "apt-get update && apt-get upgrade -y",
+          "issue": "outdated_software",
+          "priority": "P1",
+          "steps": [
+            "Run software update check on device",
+            "Apply all available patches",
+            "Schedule regular update checks"
+          ],
+          "title": "Update Device Software"
+        },
+        {
+          "command": null,
+          "issue": "old_software",
+          "priority": "P1",
+          "steps": [
+            "Identify EOL software versions",
+            "Upgrade to supported versions",
+            "If upgrade not possible, isolate device on separate VLAN"
+          ],
+          "title": "Replace End-of-Life Software"
+        }
+      ],
+      "risk_level": "HIGH",
+      "risk_score": 46,
+      "state": "up",
+      "vendor": "HP"
+    },
+    {
+      "blast_radius": 10,
+      "cves": [
+        {
+          "cve_id": "CVE-2023-1389",
+          "cvss_score": 9.8,
+          "description": "Default credentials via telnet"
+        },
+        {
+          "cve_id": "CVE-2022-27593",
+          "cvss_score": 7.5,
+          "description": "Unencrypted web interface"
+        },
+        {
+          "cve_id": "CVE-2021-36260",
+          "cvss_score": 9.8,
+          "description": "Camera remote code execution via RTSP"
+        }
+      ],
+      "cvss": 9.0,
+      "device_type": "IP Camera",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "ipcam-server",
+      "id": "122-0-4-211",
+      "ip": "122.0.4.211",
+      "issues": [
+        "default_credentials",
+        "open_telnet",
+        "http_no_auth",
+        "unencrypted_http",
+        "unencrypted_traffic",
+        "http_no_auth",
+        "unencrypted_http",
+        "outdated_firmware",
+        "upnp_enabled",
+        "default_credentials"
+      ],
+      "mac": "AA:BB:CC:DD:EE:10",
+      "open_ports": [
+        {
+          "port": 554,
+          "product": "Dahua",
+          "service": "rtsp",
+          "version": "1.0"
+        },
+        {
+          "port": 80,
+          "product": "",
+          "service": "http",
+          "version": ""
+        },
+        {
+          "port": 23,
+          "product": "",
+          "service": "telnet",
+          "version": ""
+        }
+      ],
+      "os_guess": "Linux 3.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [
+        {
+          "id": "I1",
+          "name": "Weak/Hardcoded Passwords",
+          "severity": "CRITICAL"
+        },
+        {
+          "id": "I2",
+          "name": "Insecure Network Services",
+          "severity": "CRITICAL"
+        },
+        {
+          "id": "I3",
+          "name": "Insecure Ecosystem Interfaces",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I7",
+          "name": "Insecure Data Transfer",
+          "severity": "HIGH"
+        },
+        {
+          "id": "I4",
+          "name": "Lack of Secure Update Mechanism",
+          "severity": "MEDIUM"
+        },
+        {
+          "id": "I9",
+          "name": "Insecure Default Settings",
+          "severity": "HIGH"
+        }
+      ],
+      "remediations": [
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+          "issue": "open_telnet",
+          "priority": "P0",
+          "steps": [
+            "Access router/device admin panel",
+            "Disable Telnet service",
+            "Use SSH instead if remote access is needed"
+          ],
+          "title": "Disable Telnet (Port 23)"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "unencrypted_traffic",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS on all services",
+            "Disable unencrypted protocols",
+            "Use VPN for remote access"
+          ],
+          "title": "Enable Traffic Encryption"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "http_no_auth",
+          "priority": "P1",
+          "steps": [
+            "Enable HTTPS on device web interface",
+            "Add authentication to HTTP endpoints",
+            "Block HTTP from external access"
+          ],
+          "title": "Secure HTTP Interface"
+        },
+        {
+          "command": "iptables -A INPUT -p tcp --dport 80 -j DROP",
+          "issue": "unencrypted_http",
+          "priority": "P1",
+          "steps": [
+            "Enable TLS/SSL on device",
+            "Redirect all HTTP to HTTPS",
+            "Use strong cipher suites"
+          ],
+          "title": "Force HTTPS"
+        },
+        {
+          "command": null,
+          "issue": "outdated_firmware",
+          "priority": "P1",
+          "steps": [
+            "Check manufacturer website for latest firmware",
+            "Download and verify firmware image",
+            "Apply update via device admin panel"
+          ],
+          "title": "Update Device Firmware"
+        },
+        {
+          "command": null,
+          "issue": "upnp_enabled",
+          "priority": "P2",
+          "steps": [
+            "Access router admin panel",
+            "Navigate to Advanced > UPnP",
+            "Disable UPnP service"
+          ],
+          "title": "Disable UPnP"
+        },
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        }
+      ],
+      "risk_level": "CRITICAL",
+      "risk_score": 100,
+      "state": "up",
+      "vendor": "Dahua"
+    },
+    {
+      "blast_radius": 7,
+      "cves": [
+        {
+          "cve_id": "CVE-2019-0708",
+          "cvss_score": 9.8,
+          "description": "BlueKeep RDP vulnerability"
+        }
+      ],
+      "cvss": 7.0,
+      "device_type": "Windows Machine",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "windows-manaswi",
+      "id": "122-0-4-5",
+      "ip": "122.0.4.5",
+      "issues": [
+        "open_telnet",
+        "default_credentials"
+      ],
+      "mac": "8c:8b:5b:07:5d:7b",
+      "open_ports": [
+        {
+          "port": 3389,
+          "product": "Microsoft RDP",
+          "service": "ms-wbt-server",
+          "version": ""
+        },
+        {
+          "port": 443,
+          "product": "",
+          "service": "https",
+          "version": ""
+        }
+      ],
+      "os_guess": "Windows 10",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [
+        {
+          "id": "I2",
+          "name": "Insecure Network Services",
+          "severity": "HIGH"
+        }
+      ],
+      "remediations": [
+        {
+          "command": "iptables -A INPUT -p tcp --dport 23 -j DROP",
+          "issue": "open_telnet",
+          "priority": "P0",
+          "steps": [
+            "Access router/device admin panel",
+            "Disable Telnet service",
+            "Use SSH instead if remote access is needed"
+          ],
+          "title": "Disable Telnet (Port 23)"
+        },
+        {
+          "command": null,
+          "issue": "default_credentials",
+          "priority": "P0",
+          "steps": [
+            "Log into device admin panel",
+            "Navigate to Users or Security settings",
+            "Change default username/password to a strong unique password"
+          ],
+          "title": "Change Default Credentials"
+        }
+      ],
+      "risk_level": "HIGH",
+      "risk_score": 57,
+      "state": "up",
+      "vendor": "Dell"
+    },
+    {
+      "blast_radius": 3,
+      "cves": [],
+      "cvss": 3.0,
+      "device_type": "Linux Server/SBC",
+      "firewall_blocks": [],
+      "firewall_detected": false,
+      "firewall_reduction": 0,
+      "hostname": "pop-os",
+      "id": "122-0-4-7",
+      "ip": "122.0.4.7",
+      "issues": [],
+      "mac": "c6:d5:25:0a:8c:56",
+      "open_ports": [
+        {
+          "port": 22,
+          "product": "OpenSSH",
+          "service": "ssh",
+          "version": "8.9"
+        },
+        {
+          "port": 443,
+          "product": "",
+          "service": "https",
+          "version": ""
+        }
+      ],
+      "os_guess": "Linux 5.x",
+      "oui_device_type": null,
+      "oui_vendor": null,
+      "owasp_mappings": [],
+      "remediations": [],
+      "risk_level": "LOW",
+      "risk_score": 35,
+      "state": "up",
+      "vendor": "OPPO"
     }
   ],
   "alerts": [
@@ -453,14 +1333,14 @@
       "device_name": "ipcam-server",
       "device_ip": "192.168.1.22",
       "title": "Telnet Service Exposed on Server-Room Camera",
-      "description": "Device 192.168.1.22 has Telnet (port 23) open with no authentication. Combined with default credentials, an attacker can gain full shell access to the camera. MITRE T0886 — Remote Services.",
+      "description": "Device 192.168.1.22 has Telnet (port 23) open with no authentication. Combined with default credentials, an attacker can gain full shell access to the camera. MITRE T0886 \u2014 Remote Services.",
       "severity": "critical",
       "status": "active",
       "type": "Intrusion",
       "mitre_id": "T0886",
       "mitre_name": "Remote Services",
       "owasp_category": "I2",
-      "time": "2026-03-25T14:31:18Z",
+      "time": "2026-04-12T14:31:18Z",
       "count": 1
     },
     {
@@ -468,7 +1348,7 @@
       "device_id": "DEV-005",
       "device_name": "ipcam-server",
       "device_ip": "192.168.1.22",
-      "title": "Default Credentials Detected — Server Room Camera",
+      "title": "Default Credentials Detected \u2014 Server Room Camera",
       "description": "Camera at 192.168.1.22 is using factory-default username/password (admin/admin). This satisfies MITRE T0812. Immediate credential rotation required.",
       "severity": "critical",
       "status": "active",
@@ -476,7 +1356,7 @@
       "mitre_id": "T0812",
       "mitre_name": "Default Credentials",
       "owasp_category": "I1",
-      "time": "2026-03-25T14:31:18Z",
+      "time": "2026-04-12T14:31:18Z",
       "count": 1
     },
     {
@@ -492,7 +1372,7 @@
       "mitre_id": "T0886",
       "mitre_name": "Remote Services",
       "owasp_category": "I2",
-      "time": "2026-03-25T14:31:02Z",
+      "time": "2026-04-12T14:31:02Z",
       "count": 1
     },
     {
@@ -500,7 +1380,7 @@
       "device_id": "DEV-005",
       "device_name": "ipcam-server",
       "device_ip": "192.168.1.22",
-      "title": "CVE-2021-33544 — Critical RCE in GoAhead Web Server",
+      "title": "CVE-2021-33544 \u2014 Critical RCE in GoAhead Web Server",
       "description": "GoAhead WebServer 2.5.0 running on DEV-005 is affected by CVE-2021-33544 (CVSS 9.8). Stack-based buffer overflow allows unauthenticated remote code execution.",
       "severity": "critical",
       "status": "active",
@@ -508,7 +1388,7 @@
       "mitre_id": "T0866",
       "mitre_name": "Exploitation of Remote Services",
       "owasp_category": "I5",
-      "time": "2026-03-25T14:31:18Z",
+      "time": "2026-04-12T14:31:18Z",
       "count": 1
     },
     {
@@ -516,7 +1396,7 @@
       "device_id": "DEV-001",
       "device_name": "scanme.nmap.org",
       "device_ip": "45.33.32.156",
-      "title": "CVE-2019-0211 — Apache 2.4.7 Privilege Escalation",
+      "title": "CVE-2019-0211 \u2014 Apache 2.4.7 Privilege Escalation",
       "description": "Apache 2.4.7 on DEV-001 is affected by CVE-2019-0211 (CVSS 9.8). Local users can escalate to root via MPM event, worker, or prefork. Upgrade to 2.4.39+.",
       "severity": "high",
       "status": "active",
@@ -524,7 +1404,7 @@
       "mitre_id": "T0866",
       "mitre_name": "Exploitation of Remote Services",
       "owasp_category": "I5",
-      "time": "2026-03-25T14:30:00Z",
+      "time": "2026-04-12T14:30:00Z",
       "count": 1
     },
     {
@@ -533,14 +1413,14 @@
       "device_name": "gateway.local",
       "device_ip": "192.168.1.1",
       "title": "Outdated TLS 1.1 on Gateway HTTPS",
-      "description": "Gateway 192.168.1.1 uses TLS 1.1 which is deprecated (RFC 8996). Subject to BEAST and POODLE attacks. MITRE T0830 — Man in the Middle.",
+      "description": "Gateway 192.168.1.1 uses TLS 1.1 which is deprecated (RFC 8996). Subject to BEAST and POODLE attacks. MITRE T0830 \u2014 Man in the Middle.",
       "severity": "high",
       "status": "active",
       "type": "Protocol",
       "mitre_id": "T0830",
       "mitre_name": "Man in the Middle",
       "owasp_category": "I7",
-      "time": "2026-03-25T14:31:02Z",
+      "time": "2026-04-12T14:31:02Z",
       "count": 1
     },
     {
@@ -548,15 +1428,15 @@
       "device_id": "DEV-004",
       "device_name": "ipcam-lobby",
       "device_ip": "192.168.1.21",
-      "title": "UPnP Enabled — Device Discovery Risk",
-      "description": "Lobby camera has UPnP enabled (port 1900). UPnP can be exploited for port mapping attacks and device enumeration. MITRE T0846 — Remote System Discovery.",
+      "title": "UPnP Enabled \u2014 Device Discovery Risk",
+      "description": "Lobby camera has UPnP enabled (port 1900). UPnP can be exploited for port mapping attacks and device enumeration. MITRE T0846 \u2014 Remote System Discovery.",
       "severity": "medium",
       "status": "active",
       "type": "Discovery",
       "mitre_id": "T0846",
       "mitre_name": "Remote System Discovery",
       "owasp_category": "I9",
-      "time": "2026-03-25T14:31:10Z",
+      "time": "2026-04-12T14:31:10Z",
       "count": 1
     },
     {
@@ -572,7 +1452,7 @@
       "mitre_id": "T0830",
       "mitre_name": "Man in the Middle",
       "owasp_category": "I7",
-      "time": "2026-03-25T14:30:55Z",
+      "time": "2026-04-12T14:30:55Z",
       "count": 12
     },
     {
@@ -581,14 +1461,14 @@
       "device_name": "gateway.local",
       "device_ip": "192.168.1.1",
       "title": "Gateway Running Firmware from 2019",
-      "description": "Gateway firmware v1.0.2 (2019) has not been updated in 7 years. Multiple unpatched CVEs likely. OWASP I4 — Lack of Secure Update Mechanism.",
+      "description": "Gateway firmware v1.0.2 (2019) has not been updated in 7 years. Multiple unpatched CVEs likely. OWASP I4 \u2014 Lack of Secure Update Mechanism.",
       "severity": "medium",
       "status": "active",
       "type": "Vulnerability",
       "mitre_id": "T0866",
       "mitre_name": "Exploitation of Remote Services",
       "owasp_category": "I4",
-      "time": "2026-03-25T14:31:02Z",
+      "time": "2026-04-12T14:31:02Z",
       "count": 1
     },
     {
@@ -596,7 +1476,7 @@
       "device_id": "DEV-004",
       "device_name": "ipcam-lobby",
       "device_ip": "192.168.1.21",
-      "title": "CVE-2021-33544 — GoAhead RCE on Lobby Camera",
+      "title": "CVE-2021-33544 \u2014 GoAhead RCE on Lobby Camera",
       "description": "Same GoAhead 2.5.0 vulnerability present on lobby camera. Unauthenticated remote code execution possible from the local network.",
       "severity": "high",
       "status": "active",
@@ -604,7 +1484,7 @@
       "mitre_id": "T0866",
       "mitre_name": "Exploitation of Remote Services",
       "owasp_category": "I5",
-      "time": "2026-03-25T14:31:10Z",
+      "time": "2026-04-12T14:31:10Z",
       "count": 1
     },
     {
@@ -626,96 +1506,583 @@
   ],
   "heatmap": {
     "traffic_by_hour": [
-      { "hour": "00:00", "inbound": 42, "outbound": 31, "anomalies": 0 },
-      { "hour": "01:00", "inbound": 38, "outbound": 28, "anomalies": 0 },
-      { "hour": "02:00", "inbound": 35, "outbound": 25, "anomalies": 0 },
-      { "hour": "03:00", "inbound": 33, "outbound": 22, "anomalies": 0 },
-      { "hour": "04:00", "inbound": 31, "outbound": 20, "anomalies": 0 },
-      { "hour": "05:00", "inbound": 40, "outbound": 29, "anomalies": 0 },
-      { "hour": "06:00", "inbound": 82, "outbound": 61, "anomalies": 0 },
-      { "hour": "07:00", "inbound": 145, "outbound": 110, "anomalies": 0 },
-      { "hour": "08:00", "inbound": 210, "outbound": 178, "anomalies": 0 },
-      { "hour": "09:00", "inbound": 287, "outbound": 241, "anomalies": 14 },
-      { "hour": "10:00", "inbound": 324, "outbound": 289, "anomalies": 0 },
-      { "hour": "11:00", "inbound": 298, "outbound": 267, "anomalies": 0 },
-      { "hour": "12:00", "inbound": 241, "outbound": 198, "anomalies": 0 },
-      { "hour": "13:00", "inbound": 315, "outbound": 278, "anomalies": 21 },
-      { "hour": "14:00", "inbound": 389, "outbound": 14300, "anomalies": 47 },
-      { "hour": "15:00", "inbound": 276, "outbound": 245, "anomalies": 0 },
-      { "hour": "16:00", "inbound": 301, "outbound": 268, "anomalies": 0 },
-      { "hour": "17:00", "inbound": 265, "outbound": 234, "anomalies": 0 },
-      { "hour": "18:00", "inbound": 189, "outbound": 155, "anomalies": 0 },
-      { "hour": "19:00", "inbound": 142, "outbound": 110, "anomalies": 0 },
-      { "hour": "20:00", "inbound": 98, "outbound": 78, "anomalies": 0 },
-      { "hour": "21:00", "inbound": 75, "outbound": 60, "anomalies": 0 },
-      { "hour": "22:00", "inbound": 61, "outbound": 48, "anomalies": 0 },
-      { "hour": "23:00", "inbound": 50, "outbound": 38, "anomalies": 0 }
+      {
+        "hour": "00:00",
+        "inbound": 42,
+        "outbound": 31,
+        "anomalies": 0
+      },
+      {
+        "hour": "01:00",
+        "inbound": 38,
+        "outbound": 28,
+        "anomalies": 0
+      },
+      {
+        "hour": "02:00",
+        "inbound": 35,
+        "outbound": 25,
+        "anomalies": 0
+      },
+      {
+        "hour": "03:00",
+        "inbound": 33,
+        "outbound": 22,
+        "anomalies": 0
+      },
+      {
+        "hour": "04:00",
+        "inbound": 31,
+        "outbound": 20,
+        "anomalies": 0
+      },
+      {
+        "hour": "05:00",
+        "inbound": 40,
+        "outbound": 29,
+        "anomalies": 0
+      },
+      {
+        "hour": "06:00",
+        "inbound": 82,
+        "outbound": 61,
+        "anomalies": 0
+      },
+      {
+        "hour": "07:00",
+        "inbound": 145,
+        "outbound": 110,
+        "anomalies": 0
+      },
+      {
+        "hour": "08:00",
+        "inbound": 210,
+        "outbound": 178,
+        "anomalies": 0
+      },
+      {
+        "hour": "09:00",
+        "inbound": 287,
+        "outbound": 241,
+        "anomalies": 14
+      },
+      {
+        "hour": "10:00",
+        "inbound": 324,
+        "outbound": 289,
+        "anomalies": 0
+      },
+      {
+        "hour": "11:00",
+        "inbound": 298,
+        "outbound": 267,
+        "anomalies": 0
+      },
+      {
+        "hour": "12:00",
+        "inbound": 241,
+        "outbound": 198,
+        "anomalies": 0
+      },
+      {
+        "hour": "13:00",
+        "inbound": 315,
+        "outbound": 278,
+        "anomalies": 21
+      },
+      {
+        "hour": "14:00",
+        "inbound": 389,
+        "outbound": 14300,
+        "anomalies": 47
+      },
+      {
+        "hour": "15:00",
+        "inbound": 276,
+        "outbound": 245,
+        "anomalies": 0
+      },
+      {
+        "hour": "16:00",
+        "inbound": 301,
+        "outbound": 268,
+        "anomalies": 0
+      },
+      {
+        "hour": "17:00",
+        "inbound": 265,
+        "outbound": 234,
+        "anomalies": 0
+      },
+      {
+        "hour": "18:00",
+        "inbound": 189,
+        "outbound": 155,
+        "anomalies": 0
+      },
+      {
+        "hour": "19:00",
+        "inbound": 142,
+        "outbound": 110,
+        "anomalies": 0
+      },
+      {
+        "hour": "20:00",
+        "inbound": 98,
+        "outbound": 78,
+        "anomalies": 0
+      },
+      {
+        "hour": "21:00",
+        "inbound": 75,
+        "outbound": 60,
+        "anomalies": 0
+      },
+      {
+        "hour": "22:00",
+        "inbound": 61,
+        "outbound": 48,
+        "anomalies": 0
+      },
+      {
+        "hour": "23:00",
+        "inbound": 50,
+        "outbound": 38,
+        "anomalies": 0
+      }
     ],
     "device_traffic": [
-      { "device": "gateway.local",    "inbound": 4820, "outbound": 3201, "threats": 4 },
-      { "device": "mqtt-broker",      "inbound": 2140, "outbound": 2980, "threats": 0 },
-      { "device": "ipcam-lobby",      "inbound": 380,  "outbound": 8920, "threats": 3 },
-      { "device": "ipcam-server",     "inbound": 290,  "outbound": 14300,"threats": 5 },
-      { "device": "sensor-temp-a1",   "inbound": 120,  "outbound": 85,   "threats": 0 },
-      { "device": "mobile-admin-01",  "inbound": 1840, "outbound": 920,  "threats": 1 },
-      { "device": "scanme.nmap.org",  "inbound": 210,  "outbound": 190,  "threats": 1 },
-      { "device": "dns.google",       "inbound": 50,   "outbound": 48,   "threats": 0 }
+      {
+        "device": "gateway.local",
+        "inbound": 4820,
+        "outbound": 3201,
+        "threats": 4
+      },
+      {
+        "device": "mqtt-broker",
+        "inbound": 2140,
+        "outbound": 2980,
+        "threats": 0
+      },
+      {
+        "device": "ipcam-lobby",
+        "inbound": 380,
+        "outbound": 8920,
+        "threats": 3
+      },
+      {
+        "device": "ipcam-server",
+        "inbound": 290,
+        "outbound": 14300,
+        "threats": 5
+      },
+      {
+        "device": "sensor-temp-a1",
+        "inbound": 120,
+        "outbound": 85,
+        "threats": 0
+      },
+      {
+        "device": "mobile-admin-01",
+        "inbound": 1840,
+        "outbound": 920,
+        "threats": 1
+      },
+      {
+        "device": "scanme.nmap.org",
+        "inbound": 210,
+        "outbound": 190,
+        "threats": 1
+      },
+      {
+        "device": "dns.google",
+        "inbound": 50,
+        "outbound": 48,
+        "threats": 0
+      }
     ],
     "daily_intensity": [
-      { "day": "Mon", "hours": [5,3,2,2,2,3,15,30,55,72,80,74,50,76,90,68,73,60,42,28,18,12,8,6] },
-      { "day": "Tue", "hours": [4,3,2,2,2,3,14,28,52,68,75,71,48,72,85,64,69,57,40,25,16,11,7,5] },
-      { "day": "Wed", "hours": [4,3,2,2,2,3,13,27,50,95,80,73,49,74,88,66,71,58,41,26,17,11,7,5] },
-      { "day": "Thu", "hours": [5,3,2,2,2,3,14,29,53,70,77,72,49,73,86,65,70,58,40,26,16,11,7,5] },
-      { "day": "Fri", "hours": [4,3,2,2,2,3,14,28,51,69,76,71,48,72,86,64,69,57,39,25,16,10,7,5] },
-      { "day": "Sat", "hours": [3,2,2,1,1,2,5,12,25,38,45,42,30,28,22,20,18,15,12,8,6,5,4,3] },
-      { "day": "Sun", "hours": [3,2,1,1,1,2,5,10,20,30,38,35,25,22,18,16,14,12,10,7,5,4,3,2] }
+      {
+        "day": "Mon",
+        "hours": [
+          5,
+          3,
+          2,
+          2,
+          2,
+          3,
+          15,
+          30,
+          55,
+          72,
+          80,
+          74,
+          50,
+          76,
+          90,
+          68,
+          73,
+          60,
+          42,
+          28,
+          18,
+          12,
+          8,
+          6
+        ]
+      },
+      {
+        "day": "Tue",
+        "hours": [
+          4,
+          3,
+          2,
+          2,
+          2,
+          3,
+          14,
+          28,
+          52,
+          68,
+          75,
+          71,
+          48,
+          72,
+          85,
+          64,
+          69,
+          57,
+          40,
+          25,
+          16,
+          11,
+          7,
+          5
+        ]
+      },
+      {
+        "day": "Wed",
+        "hours": [
+          4,
+          3,
+          2,
+          2,
+          2,
+          3,
+          13,
+          27,
+          50,
+          95,
+          80,
+          73,
+          49,
+          74,
+          88,
+          66,
+          71,
+          58,
+          41,
+          26,
+          17,
+          11,
+          7,
+          5
+        ]
+      },
+      {
+        "day": "Thu",
+        "hours": [
+          5,
+          3,
+          2,
+          2,
+          2,
+          3,
+          14,
+          29,
+          53,
+          70,
+          77,
+          72,
+          49,
+          73,
+          86,
+          65,
+          70,
+          58,
+          40,
+          26,
+          16,
+          11,
+          7,
+          5
+        ]
+      },
+      {
+        "day": "Fri",
+        "hours": [
+          4,
+          3,
+          2,
+          2,
+          2,
+          3,
+          14,
+          28,
+          51,
+          69,
+          76,
+          71,
+          48,
+          72,
+          86,
+          64,
+          69,
+          57,
+          39,
+          25,
+          16,
+          10,
+          7,
+          5
+        ]
+      },
+      {
+        "day": "Sat",
+        "hours": [
+          3,
+          2,
+          2,
+          1,
+          1,
+          2,
+          5,
+          12,
+          25,
+          38,
+          45,
+          42,
+          30,
+          28,
+          22,
+          20,
+          18,
+          15,
+          12,
+          8,
+          6,
+          5,
+          4,
+          3
+        ]
+      },
+      {
+        "day": "Sun",
+        "hours": [
+          3,
+          2,
+          1,
+          1,
+          1,
+          2,
+          5,
+          10,
+          20,
+          30,
+          38,
+          35,
+          25,
+          22,
+          18,
+          16,
+          14,
+          12,
+          10,
+          7,
+          5,
+          4,
+          3,
+          2
+        ]
+      }
     ]
   },
   "report": {
     "security_score": 38,
     "weekly_alerts": [
-      { "day": "Mon", "critical": 0, "high": 2, "medium": 3, "low": 1 },
-      { "day": "Tue", "critical": 1, "high": 1, "medium": 2, "low": 2 },
-      { "day": "Wed", "critical": 2, "high": 3, "medium": 4, "low": 1 },
-      { "day": "Thu", "critical": 1, "high": 2, "medium": 2, "low": 3 },
-      { "day": "Fri", "critical": 3, "high": 4, "medium": 5, "low": 2 },
-      { "day": "Sat", "critical": 0, "high": 1, "medium": 1, "low": 0 },
-      { "day": "Sun", "critical": 0, "high": 0, "medium": 0, "low": 0 }
+      {
+        "day": "Mon",
+        "critical": 0,
+        "high": 2,
+        "medium": 3,
+        "low": 1
+      },
+      {
+        "day": "Tue",
+        "critical": 1,
+        "high": 1,
+        "medium": 2,
+        "low": 2
+      },
+      {
+        "day": "Wed",
+        "critical": 2,
+        "high": 3,
+        "medium": 4,
+        "low": 1
+      },
+      {
+        "day": "Thu",
+        "critical": 1,
+        "high": 2,
+        "medium": 2,
+        "low": 3
+      },
+      {
+        "day": "Fri",
+        "critical": 3,
+        "high": 4,
+        "medium": 5,
+        "low": 2
+      },
+      {
+        "day": "Sat",
+        "critical": 0,
+        "high": 1,
+        "medium": 1,
+        "low": 0
+      },
+      {
+        "day": "Sun",
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      }
     ],
     "threat_breakdown": [
-      { "name": "Intrusion",     "value": 2, "color": "#EF4444" },
-      { "name": "Vulnerability", "value": 4, "color": "#F97316" },
-      { "name": "Credential",    "value": 2, "color": "#F59E0B" },
-      { "name": "Protocol",      "value": 2, "color": "#A855F7" },
-      { "name": "Discovery",     "value": 1, "color": "#06B6D4" }
+      {
+        "name": "Intrusion",
+        "value": 2,
+        "color": "#EF4444"
+      },
+      {
+        "name": "Vulnerability",
+        "value": 4,
+        "color": "#F97316"
+      },
+      {
+        "name": "Credential",
+        "value": 2,
+        "color": "#F59E0B"
+      },
+      {
+        "name": "Protocol",
+        "value": 2,
+        "color": "#A855F7"
+      },
+      {
+        "name": "Discovery",
+        "value": 1,
+        "color": "#06B6D4"
+      }
     ],
     "posture_scores": [
-      { "metric": "Auth",        "value": 22 },
-      { "metric": "Encryption",  "value": 45 },
-      { "metric": "Patching",    "value": 30 },
-      { "metric": "Monitoring",  "value": 70 },
-      { "metric": "Access Ctrl", "value": 35 },
-      { "metric": "Logging",     "value": 62 }
+      {
+        "metric": "Auth",
+        "value": 22
+      },
+      {
+        "metric": "Encryption",
+        "value": 45
+      },
+      {
+        "metric": "Patching",
+        "value": 30
+      },
+      {
+        "metric": "Monitoring",
+        "value": 70
+      },
+      {
+        "metric": "Access Ctrl",
+        "value": 35
+      },
+      {
+        "metric": "Logging",
+        "value": 62
+      }
     ],
     "audit_log": [
-      { "time": "09:14", "action": "Scan initiated on targets: scanme.nmap.org, 8.8.8.8, 192.168.1.0/24", "user": "manaswi@shuri", "outcome": "success" },
-      { "time": "09:15", "action": "8 devices discovered, 6 up / 2 down", "user": "system", "outcome": "success" },
-      { "time": "09:15", "action": "MITRE ATT&CK mapping applied to 9 issues", "user": "system", "outcome": "success" },
-      { "time": "09:15", "action": "OWASP IoT Top 10 mapping completed", "user": "system", "outcome": "success" },
-      { "time": "09:15", "action": "CVE lookup: 3 critical CVEs found", "user": "system", "outcome": "success" },
-      { "time": "09:15", "action": "11 alerts generated and prioritised", "user": "system", "outcome": "success" },
-      { "time": "09:16", "action": "Scan report exported to mock_data.json", "user": "manaswi@shuri", "outcome": "success" }
+      {
+        "time": "09:14",
+        "action": "Scan initiated on targets: scanme.nmap.org, 8.8.8.8, 192.168.1.0/24",
+        "user": "manaswi@shuri",
+        "outcome": "success"
+      },
+      {
+        "time": "09:15",
+        "action": "8 devices discovered, 6 up / 2 down",
+        "user": "system",
+        "outcome": "success"
+      },
+      {
+        "time": "09:15",
+        "action": "MITRE ATT&CK mapping applied to 9 issues",
+        "user": "system",
+        "outcome": "success"
+      },
+      {
+        "time": "09:15",
+        "action": "OWASP IoT Top 10 mapping completed",
+        "user": "system",
+        "outcome": "success"
+      },
+      {
+        "time": "09:15",
+        "action": "CVE lookup: 3 critical CVEs found",
+        "user": "system",
+        "outcome": "success"
+      },
+      {
+        "time": "09:15",
+        "action": "11 alerts generated and prioritised",
+        "user": "system",
+        "outcome": "success"
+      },
+      {
+        "time": "09:16",
+        "action": "Scan report exported to mock_data.json",
+        "user": "manaswi@shuri",
+        "outcome": "success"
+      }
     ],
     "kpis": {
-      "security_score":   { "value": "38/100", "trend": "-12", "up": false },
-      "devices_online":   { "value": "6/8",    "trend": "0",   "up": true  },
-      "active_threats":   { "value": "10",     "trend": "+10", "up": false },
-      "resolved_today":   { "value": "1",      "trend": "+1",  "up": true  }
+      "security_score": {
+        "value": "38/100",
+        "trend": "-12",
+        "up": false
+      },
+      "devices_online": {
+        "value": "6/8",
+        "trend": "0",
+        "up": true
+      },
+      "active_threats": {
+        "value": "10",
+        "trend": "+10",
+        "up": false
+      },
+      "resolved_today": {
+        "value": "1",
+        "trend": "+1",
+        "up": true
+      }
     }
   },
   "honeypot_alerts": [
     {
-      "timestamp": "2026-03-25T14:31:04.112Z",
+      "timestamp": "2026-04-12T14:31:04.112Z",
       "honeypot_type": "fake_telnet",
       "honeypot_port": 2323,
       "attacker_ip": "185.220.101.47",
@@ -724,7 +2091,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:31:09.883Z",
+      "timestamp": "2026-04-12T14:31:09.883Z",
       "honeypot_type": "fake_telnet",
       "honeypot_port": 2323,
       "attacker_ip": "185.220.101.47",
@@ -733,7 +2100,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:31:22.541Z",
+      "timestamp": "2026-04-12T14:31:22.541Z",
       "honeypot_type": "fake_telnet",
       "honeypot_port": 2323,
       "attacker_ip": "45.142.212.100",
@@ -742,7 +2109,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:32:01.774Z",
+      "timestamp": "2026-04-12T14:32:01.774Z",
       "honeypot_type": "fake_http_admin",
       "honeypot_port": 8080,
       "attacker_ip": "91.240.118.172",
@@ -752,7 +2119,7 @@
       "severity": "MEDIUM"
     },
     {
-      "timestamp": "2026-03-25T14:32:14.309Z",
+      "timestamp": "2026-04-12T14:32:14.309Z",
       "honeypot_type": "fake_http_admin",
       "honeypot_port": 8080,
       "attacker_ip": "91.240.118.172",
@@ -762,7 +2129,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:33:00.220Z",
+      "timestamp": "2026-04-12T14:33:00.220Z",
       "honeypot_type": "fake_http_admin",
       "honeypot_port": 8080,
       "attacker_ip": "194.165.16.11",
@@ -772,7 +2139,7 @@
       "severity": "MEDIUM"
     },
     {
-      "timestamp": "2026-03-25T14:33:15.910Z",
+      "timestamp": "2026-04-12T14:33:15.910Z",
       "honeypot_type": "fake_http_admin",
       "honeypot_port": 8080,
       "attacker_ip": "194.165.16.11",
@@ -782,7 +2149,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:34:07.003Z",
+      "timestamp": "2026-04-12T14:34:07.003Z",
       "honeypot_type": "fake_mqtt",
       "honeypot_port": 1883,
       "attacker_ip": "23.129.64.190",
@@ -792,7 +2159,7 @@
       "severity": "MEDIUM"
     },
     {
-      "timestamp": "2026-03-25T14:34:08.441Z",
+      "timestamp": "2026-04-12T14:34:08.441Z",
       "honeypot_type": "fake_mqtt_followup",
       "honeypot_port": 1883,
       "attacker_ip": "23.129.64.190",
@@ -801,7 +2168,7 @@
       "severity": "LOW"
     },
     {
-      "timestamp": "2026-03-25T14:35:22.660Z",
+      "timestamp": "2026-04-12T14:35:22.660Z",
       "honeypot_type": "fake_ssh",
       "honeypot_port": 2222,
       "attacker_ip": "185.220.101.57",
@@ -810,7 +2177,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:36:01.812Z",
+      "timestamp": "2026-04-12T14:36:01.812Z",
       "honeypot_type": "fake_ssh",
       "honeypot_port": 2222,
       "attacker_ip": "89.248.167.131",
@@ -819,7 +2186,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:38:44.190Z",
+      "timestamp": "2026-04-12T14:38:44.190Z",
       "honeypot_type": "fake_telnet",
       "honeypot_port": 2323,
       "attacker_ip": "198.199.88.110",
@@ -828,7 +2195,7 @@
       "severity": "HIGH"
     },
     {
-      "timestamp": "2026-03-25T14:40:11.002Z",
+      "timestamp": "2026-04-12T14:40:11.002Z",
       "honeypot_type": "fake_mqtt",
       "honeypot_port": 1883,
       "attacker_ip": "77.247.110.100",

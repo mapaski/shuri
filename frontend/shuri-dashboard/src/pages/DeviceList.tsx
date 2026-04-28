@@ -113,7 +113,7 @@ export default function DeviceList() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter size={14} className="text-muted-foreground" />
+          
           {(["all", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map(r => (
             <button
               key={r}
